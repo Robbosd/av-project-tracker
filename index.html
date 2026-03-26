@@ -299,7 +299,10 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.4);cursor:poi
 
 <!-- ═══ DETAIL ═══ -->
 <div id="page-detail" class="page">
-  <div class="back-btn" onclick="backToOverview()">← Back to overview</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
+    <div class="back-btn" style="margin-bottom:0" onclick="backToOverview()">← Back to overview</div>
+    <button onclick="deleteProject()" style="background:rgba(192,57,43,0.12);color:#e87474;border:none;border-radius:7px;padding:6px 13px;font-family:var(--sans);font-size:11px;font-weight:500;cursor:pointer;transition:background .12s" onmouseover="this.style.background='rgba(192,57,43,0.22)'" onmouseout="this.style.background='rgba(192,57,43,0.12)'">Delete project</button>
+  </div>
   <div class="d-layout">
     <div class="d-main">
       <div class="d-id" id="d-id"></div>
@@ -755,6 +758,17 @@ function renderGhWrap(){
 }
 
 function backToOverview(){ CP=null; nav('overview'); }
+
+async function deleteProject(){
+  if(!CP) return;
+  if(!confirm(`Delete "${CP.name}"? This cannot be undone.`)) return;
+  const id=CP.id;
+  P=P.filter(p=>p.id!==id);
+  CP=null; nav('overview'); toast('Project deleted');
+  try {
+    await db.from('projects').delete().eq('id',id);
+  } catch(e){ toast('Error deleting: '+e.message); }
+}
 
 // ── SAVE FIELD ────────────────────────────────────────────────
 async function sf(field,val){
