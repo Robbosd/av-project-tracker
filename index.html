@@ -15,14 +15,6 @@
 }
 body{background:var(--bg);font-family:var(--sans);color:var(--tl);min-height:100vh;display:flex;overflow-x:hidden}
 
-/* AUTH SCREEN */
-#auth-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999}
-.auth-box{text-align:center;max-width:360px}
-.auth-lbl{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:12px}
-.auth-title{font-size:26px;font-weight:600;color:var(--cl);margin-bottom:8px;letter-spacing:-.01em}
-.auth-sub{font-size:13px;color:var(--mid);margin-bottom:36px;line-height:1.5}
-.auth-btn{background:var(--cl);color:var(--td);border:none;border-radius:9px;padding:13px 28px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:10px;transition:opacity .14s}
-.auth-btn:hover{opacity:.85}
 
 /* SIDEBAR */
 .sb{width:var(--sw);min-height:100vh;background:var(--sidebar);position:fixed;top:0;left:0;z-index:200;border-right:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column}
@@ -279,18 +271,6 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.4);cursor:poi
 </head>
 <body>
 
-<!-- ═══ AUTH SCREEN ═══ -->
-<div id="auth-screen">
-  <div class="auth-box">
-    <div class="auth-lbl">AnyVan</div>
-    <div class="auth-title">Project Tracker</div>
-    <div class="auth-sub">Sign in to access your projects</div>
-    <button class="auth-btn" onclick="signIn()">
-      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-      Sign in with Google
-    </button>
-  </div>
-</div>
 
 <nav class="sb">
   <div class="sb-logo"><div class="wm">AnyVan</div><div class="sub">Project Tracker</div></div>
@@ -520,48 +500,6 @@ const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec
 const TODAY=new Date();
 let CP=null, dragSrc=null;
 let P=[];
-let CURRENT_USER=null;
-
-// ── AUTH ──────────────────────────────────────────────────────
-async function initAuth(){
-  const { data:{ session } } = await db.auth.getSession();
-  if(session){
-    CURRENT_USER=session.user;
-    showApp();
-    await loadProjects();
-  } else {
-    showAuthScreen();
-  }
-  db.auth.onAuthStateChange(async(event,session)=>{
-    if(event==='SIGNED_IN'&&session){
-      CURRENT_USER=session.user;
-      showApp();
-      await loadProjects();
-    } else if(event==='SIGNED_OUT'){
-      CURRENT_USER=null; P=[];
-      showAuthScreen();
-    }
-  });
-}
-
-function showApp(){
-  document.getElementById('auth-screen').style.display='none';
-}
-
-function showAuthScreen(){
-  document.getElementById('auth-screen').style.display='flex';
-}
-
-async function signIn(){
-  await db.auth.signInWithOAuth({
-    provider:'google',
-    options:{ redirectTo: window.location.href }
-  });
-}
-
-async function signOut(){
-  await db.auth.signOut();
-}
 
 // ── DATA MAPPING ──────────────────────────────────────────────
 function toLocal(row){
@@ -651,13 +589,7 @@ function nav(page){
 }
 
 function updateCount(){
-  if(!CURRENT_USER) return;
-  const name=CURRENT_USER?.user_metadata?.full_name||CURRENT_USER?.email||'User';
-  const first=name.split(' ')[0];
-  document.getElementById('sf').innerHTML=`
-    <div style="color:var(--tl);margin-bottom:2px">${first}</div>
-    <div>${P.length} project${P.length!==1?'s':''}</div>
-    <div style="margin-top:6px;cursor:pointer;color:rgba(136,136,136,.7);transition:color .12s" onmouseover="this.style.color='#DAD5D0'" onmouseout="this.style.color='rgba(136,136,136,.7)'" onclick="signOut()">Sign out</div>`;
+  document.getElementById('sf').textContent=P.length+' project'+(P.length!==1?'s':'');
 }
 
 function fmtDate(d){if(!d)return'—';const dt=new Date(d+'T12:00:00');return MO[dt.getMonth()]+' '+dt.getFullYear();}
@@ -1067,7 +999,7 @@ async function addNote(){
   if(!txt) return;
   const noteId='N'+Date.now();
   const today=new Date().toISOString().slice(0,10);
-  const author=CURRENT_USER?.user_metadata?.full_name?.split(' ').slice(0,2).join(' ')||'Scott R.';
+  const author='Scott R.';
   CP.notes.unshift({ id:noteId, text:txt, date:today, author });
   document.getElementById('note-in').value='';
   renderNotes(); toast('Note added');
@@ -1163,7 +1095,6 @@ async function submitProject(){
     problem:document.getElementById('f-problem').value.trim(),
     dod:document.getElementById('f-dod').value.trim(),
     completed_date:status==='DONE'?today:null,
-    user_id:CURRENT_USER.id,
   };
 
   P.unshift(toLocal(row));
@@ -1300,7 +1231,7 @@ function toast(msg){
 }
 
 // ── INIT ──────────────────────────────────────────────────────
-initAuth();
+loadProjects();
 </script>
 </body>
 </html>
