@@ -266,6 +266,27 @@ body{background:var(--bg);font-family:var(--sans);color:var(--tl);min-height:100
 /* MISC */
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#e2e2e2;border-radius:2px}
 input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0);cursor:pointer}
+
+/* DAILY TASKS */
+.dt-streak-badge{background:#1f1f1f;color:#fff;border-radius:8px;padding:6px 14px;font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.04em;flex-shrink:0}
+.dt-progress{background:var(--cd);border:1px solid var(--b);border-radius:13px;padding:18px 22px;margin-bottom:26px;display:flex;align-items:center;gap:22px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.dt-prog-left{flex-shrink:0}
+.dt-prog-nums{font-family:var(--mono);font-size:30px;font-weight:500;line-height:1;color:var(--tl)}
+.dt-prog-sub{font-size:13px;color:var(--mid);margin-top:4px}
+.dt-prog-bar-wrap{flex:1;height:4px;background:#e8e8e8;border-radius:2px;overflow:hidden}
+.dt-prog-bar-fill{height:100%;background:#1f1f1f;border-radius:2px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.dt-pct{font-family:var(--mono);font-size:22px;font-weight:500;color:var(--mid);flex-shrink:0;min-width:50px;text-align:right}
+.dt-add-row{display:flex;gap:8px;margin-bottom:26px}
+.dt-input{flex:1;background:var(--cd);border:1px solid var(--b);border-radius:9px;padding:10px 14px;font-family:var(--sans);font-size:15px;color:var(--tl);outline:none;transition:border-color .12s;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.dt-input:focus{border-color:#1f1f1f}
+.dt-input::placeholder{color:rgba(0,0,0,0.25)}
+.dt-nav-btn{background:none;border:1px solid var(--b);border-radius:6px;padding:5px 13px;font-family:var(--mono);font-size:12px;color:var(--mid);cursor:pointer;transition:all .12s;letter-spacing:.04em;user-select:none}
+.dt-nav-btn:hover{border-color:#1f1f1f;color:var(--tl)}
+.dt-date-chip{font-family:var(--mono);font-size:13px;color:var(--tl);font-weight:500;padding:0 6px}
+.dt-empty-msg{font-size:14px;color:var(--mid);padding:14px 2px;font-family:var(--mono)}
+.dt-foot-row{display:flex;justify-content:space-between;align-items:center;margin-top:22px;flex-wrap:wrap;gap:8px}
+.dt-carry-btn{background:var(--gold);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;transition:opacity .12s}
+.dt-carry-btn:hover{opacity:.85}
 </style>
 </head>
 <body>
@@ -274,7 +295,9 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0);cursor:poin
 <nav class="sb">
   <div class="sb-logo"><div class="wm">AnyVan</div><div class="sub">Project Tracker</div></div>
   <div class="nav">
-    <div class="nav-sec">Views</div>
+    <div class="nav-sec">Daily</div>
+    <div class="ni" onclick="nav('daily')"><span class="ndot"></span>Today</div>
+    <div class="nav-sec" style="margin-top:6px">Projects</div>
     <div class="ni active" onclick="nav('overview')"><span class="ndot"></span>Overview</div>
     <div class="ni" onclick="nav('log')"><span class="ndot"></span>Log project</div>
     <div class="ni" onclick="nav('gantt')"><span class="ndot"></span>Gantt</div>
@@ -487,6 +510,64 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0);cursor:poin
   </div>
 </div>
 
+<!-- ═══ DAILY TASKS ═══ -->
+<div id="page-daily" class="page">
+  <div class="ph" style="margin-bottom:20px">
+    <div>
+      <div class="ph-lbl" id="dt-day">Today — Monday</div>
+      <div class="ph-title" id="dt-date">28 April 2026</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid)">Streak</div>
+      <div class="dt-streak-badge" id="dt-streak">—</div>
+    </div>
+  </div>
+
+  <!-- Day navigation -->
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:22px">
+    <button class="dt-nav-btn" onclick="dtNavDay(-1)">← Prev</button>
+    <span class="dt-date-chip" id="dt-nav-label">Today</span>
+    <button class="dt-nav-btn" id="dt-next-btn" onclick="dtNavDay(1)">Next →</button>
+  </div>
+
+  <!-- Progress -->
+  <div class="dt-progress">
+    <div class="dt-prog-left">
+      <div class="dt-prog-nums" id="dt-prog-nums">0 / 0</div>
+      <div class="dt-prog-sub" id="dt-prog-sub">Add your first task above</div>
+    </div>
+    <div class="dt-prog-bar-wrap"><div class="dt-prog-bar-fill" id="dt-prog-fill" style="width:0%"></div></div>
+    <div class="dt-pct" id="dt-pct">—</div>
+  </div>
+
+  <!-- Add task -->
+  <div class="dt-add-row">
+    <input class="dt-input" id="dt-inp" type="text" placeholder="What needs to get done today?" onkeydown="if(event.key==='Enter')dtAdd()">
+    <select class="tsel" id="dt-pri"><option value="Medium">Med</option><option value="High">High</option><option value="Low">Low</option></select>
+    <button class="btn-add" onclick="dtAdd()">+ Add</button>
+  </div>
+
+  <!-- Todo section -->
+  <div id="dt-todo-div">
+    <div class="div"><span class="div-lbl" id="dt-todo-lbl">Todo</span><span class="div-line"></span></div>
+    <div class="task-list" id="dt-todo-list"></div>
+  </div>
+
+  <!-- Done section -->
+  <div id="dt-done-div" style="display:none">
+    <div class="div"><span class="div-lbl" id="dt-done-lbl">Done</span><span class="div-line"></span></div>
+    <div class="task-list" id="dt-done-list"></div>
+  </div>
+
+  <!-- Footer -->
+  <div class="dt-foot-row">
+    <button class="dt-carry-btn" id="dt-carry" onclick="dtCarryOver()" style="display:none"></button>
+    <div style="display:flex;gap:8px;margin-left:auto">
+      <button class="btn-sm" onclick="dtClearDone()">Clear done</button>
+    </div>
+  </div>
+</div>
+
 </main>
 <div class="toast" id="toast"></div>
 
@@ -587,6 +668,7 @@ function nav(page){
   if(page==='gantt') renderGantt();
   if(page==='reporting') renderReporting();
   if(page==='completed') renderCompleted();
+  if(page==='daily') initDaily();
   updateCount();
 }
 
@@ -1234,6 +1316,169 @@ function renderReporting(){
 
 function barRow(label,val,max){
   return `<div class="r-bar-row"><div class="r-bar-lbl">${esc(label)}</div><div class="r-bar-t"><div class="r-bar-f" style="width:${val/max*100}%"></div></div><div class="r-bar-v">${val}</div></div>`;
+}
+
+// ── DAILY TASKS ───────────────────────────────────────────────
+let DT_DATE='', DT_TASKS=[];
+const DT_DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const DT_MONS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function offsetDate(s,n){ const d=new Date(s+'T12:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+function dtKey(d){ return 'daily-'+d; }
+function dtLoad(d){ try{ return JSON.parse(localStorage.getItem(dtKey(d))||'[]'); }catch{ return []; } }
+function dtSave(){ localStorage.setItem(dtKey(DT_DATE),JSON.stringify(DT_TASKS)); }
+
+function initDaily(){
+  DT_DATE=todayStr();
+  DT_TASKS=dtLoad(DT_DATE);
+  renderDaily();
+}
+
+function renderDaily(){
+  const today=todayStr();
+  const d=new Date(DT_DATE+'T12:00:00');
+  const isToday=DT_DATE===today;
+  const isYest=DT_DATE===offsetDate(today,-1);
+  const isTomorrow=DT_DATE===offsetDate(today,1);
+  const prefix=isToday?'Today — ':isYest?'Yesterday — ':isTomorrow?'Tomorrow — ':'';
+  document.getElementById('dt-day').textContent=prefix+DT_DAYS[d.getDay()];
+  document.getElementById('dt-date').textContent=d.getDate()+' '+DT_MONS[d.getMonth()]+' '+d.getFullYear();
+  document.getElementById('dt-nav-label').textContent=isToday?'Today':DT_DATE;
+  const nxtBtn=document.getElementById('dt-next-btn');
+  nxtBtn.style.opacity=DT_DATE>=today?'.3':'1';
+  nxtBtn.style.pointerEvents=DT_DATE>=today?'none':'';
+  updateDTProgress();
+  renderDTList();
+}
+
+function updateDTProgress(){
+  const total=DT_TASKS.length;
+  const done=DT_TASKS.filter(t=>t.done).length;
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('dt-prog-nums').textContent=done+' / '+total;
+  document.getElementById('dt-prog-sub').textContent=total?(done===total?'All done! Great work.':(total-done)+' remaining'):'Add your first task above';
+  document.getElementById('dt-prog-fill').style.width=pct+'%';
+  document.getElementById('dt-pct').textContent=total?pct+'%':'—';
+  const streak=calcDTStreak();
+  document.getElementById('dt-streak').textContent=streak>0?streak+(streak===1?' day':' days'):'—';
+}
+
+function renderDTList(){
+  const todo=DT_TASKS.filter(t=>!t.done);
+  const done=DT_TASKS.filter(t=>t.done);
+  const today=todayStr();
+
+  const mkItem=t=>`
+    <div class="t-item${t.done?' done':''}">
+      <div class="t-row">
+        <div class="chk${t.done?' on':''}" onclick="dtToggle('${t.id}')"></div>
+        <input class="t-text" value="${esc(t.text)}" onblur="dtEdit('${t.id}',this.value)"${t.done?' disabled':''}>
+        <div class="t-meta">
+          <span class="tp-badge t${t.priority[0]}">${t.priority}</span>
+        </div>
+        <div class="t-actions">
+          <button class="ta-btn del" onclick="dtDel('${t.id}')">×</button>
+        </div>
+      </div>
+    </div>`;
+
+  const todoDivEl=document.getElementById('dt-todo-div');
+  const todoListEl=document.getElementById('dt-todo-list');
+  const doneDivEl=document.getElementById('dt-done-div');
+  const doneListEl=document.getElementById('dt-done-list');
+  const todoLbl=document.getElementById('dt-todo-lbl');
+  const doneLbl=document.getElementById('dt-done-lbl');
+
+  if(todo.length>0){
+    todoDivEl.style.display='';
+    todoLbl.textContent='Todo ('+todo.length+')';
+    todoListEl.innerHTML=todo.map(mkItem).join('');
+  } else if(DT_TASKS.length===0){
+    todoDivEl.style.display='';
+    todoLbl.textContent='Todo';
+    todoListEl.innerHTML='<div class="dt-empty-msg">Nothing here yet — add a task above</div>';
+  } else {
+    todoDivEl.style.display='none';
+    todoListEl.innerHTML='';
+  }
+
+  if(done.length>0){
+    doneDivEl.style.display='';
+    doneLbl.textContent='Done ('+done.length+')';
+    doneListEl.innerHTML=done.map(mkItem).join('');
+  } else {
+    doneDivEl.style.display='none';
+    doneListEl.innerHTML='';
+  }
+
+  const coBtn=document.getElementById('dt-carry');
+  if(DT_DATE===today){
+    const yCount=dtLoad(offsetDate(today,-1)).filter(t=>!t.done).length;
+    if(yCount>0){ coBtn.style.display=''; coBtn.textContent='Carry over '+yCount+' from yesterday →'; }
+    else coBtn.style.display='none';
+  } else { coBtn.style.display='none'; }
+}
+
+function dtToggle(id){
+  const t=DT_TASKS.find(x=>x.id===id);
+  if(!t) return;
+  t.done=!t.done;
+  dtSave(); updateDTProgress(); renderDTList();
+}
+
+function dtEdit(id,val){
+  const t=DT_TASKS.find(x=>x.id===id);
+  if(t&&val.trim()){ t.text=val.trim(); dtSave(); }
+}
+
+function dtDel(id){
+  DT_TASKS=DT_TASKS.filter(x=>x.id!==id);
+  dtSave(); updateDTProgress(); renderDTList();
+}
+
+function dtAdd(){
+  const inp=document.getElementById('dt-inp');
+  const pri=document.getElementById('dt-pri');
+  const text=inp.value.trim();
+  if(!text) return;
+  DT_TASKS.push({ id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), text, priority:pri.value, done:false });
+  dtSave(); inp.value=''; updateDTProgress(); renderDTList();
+}
+
+function dtCarryOver(){
+  const yTasks=dtLoad(offsetDate(todayStr(),-1)).filter(t=>!t.done);
+  const existing=new Set(DT_TASKS.map(t=>t.id));
+  let added=0;
+  yTasks.forEach(t=>{ if(!existing.has(t.id)){ DT_TASKS.push({...t,done:false}); added++; } });
+  if(added){ dtSave(); updateDTProgress(); renderDTList(); toast(added+' task'+(added!==1?'s':'')+' carried over'); }
+  else toast('Already up to date');
+}
+
+function dtClearDone(){
+  const n=DT_TASKS.filter(t=>t.done).length;
+  if(!n) return;
+  DT_TASKS=DT_TASKS.filter(t=>!t.done);
+  dtSave(); updateDTProgress(); renderDTList();
+  toast(n+' done task'+(n!==1?'s':'')+' cleared');
+}
+
+function dtNavDay(delta){
+  DT_DATE=offsetDate(DT_DATE,delta);
+  DT_TASKS=dtLoad(DT_DATE);
+  renderDaily();
+}
+
+function calcDTStreak(){
+  const today=todayStr();
+  let start=today;
+  if(!dtLoad(today).some(t=>t.done)) start=offsetDate(today,-1);
+  let streak=0;
+  for(let i=0;i<365;i++){
+    if(dtLoad(offsetDate(start,-i)).some(t=>t.done)) streak++;
+    else break;
+  }
+  return streak;
 }
 
 // ── TOAST ─────────────────────────────────────────────────────
