@@ -282,7 +282,10 @@ input[type=date]::-webkit-calendar-picker-indicator{cursor:pointer}
 
 <!-- OVERVIEW -->
 <div id="page-overview" class="page active">
-  <div class="ph"><div><div class="ph-lbl">All initiatives</div><div class="ph-title">Project tracker</div></div></div>
+  <div class="ph">
+    <div><div class="ph-lbl">All initiatives</div><div class="ph-title">Project tracker</div></div>
+    <button class="btn-sched" onclick="scheduleAll()" style="width:auto;margin-top:0;padding:10px 18px;font-size:14px">📅 Schedule my work</button>
+  </div>
 
   <!-- QUICK TASKS -->
   <div class="qt-panel">
@@ -296,9 +299,6 @@ input[type=date]::-webkit-calendar-picker-indicator{cursor:pointer}
       <button class="btn-add" onclick="qtAdd()">+ Add</button>
     </div>
     <div class="qt-list" id="qt-list"></div>
-    <div id="qt-sched-row" style="display:none;margin-top:10px">
-      <button class="btn-sched" onclick="qtSchedule()">📅 Schedule today's tasks</button>
-    </div>
   </div>
 
   <div class="stats" id="stat-row"></div>
@@ -505,8 +505,6 @@ function renderQT(){
   const pendingMins=QT.filter(t=>!t.done&&t.duration_mins).reduce((s,t)=>s+(t.duration_mins||0),0)
   const tot=document.getElementById('qt-total')
   if(tot)tot.textContent=pendingMins?'· '+fmtMins(pendingMins)+' left':''
-  const schedRow=document.getElementById('qt-sched-row')
-  if(schedRow)schedRow.style.display=QT.filter(t=>!t.done).length?'':'none'
   if(!QT.length){el.innerHTML='<div class="qt-empty">Nothing yet</div>';return}
   el.innerHTML=QT.map((t,i)=>`
     <div class="qt-item${t.done?' done':''}">
@@ -535,13 +533,28 @@ async function qtDel(i){
   try{await db.from('daily_tasks').delete().eq('id',id)}catch(e){toast('Error: '+e.message)}
 }
 
-function qtSchedule(){
+function scheduleAll(){
+  const lines=[]
+
+  // Daily tasks
   const pending=QT.filter(t=>!t.done)
-  if(!pending.length)return
-  const totalMins=pending.filter(t=>t.duration_mins).reduce((s,t)=>s+(t.duration_mins||0),0)
-  const taskList=pending.map(t=>t.duration_mins?`${t.text} (${t.duration_mins}m)`:t.text).join(', ')
-  const timeHint=totalMins?` — ~${fmtMins(totalMins)} total`:''
-  const msg=`Schedule today's tasks into my calendar${timeHint}: ${taskList}`
+  if(pending.length){
+    const totalMins=pending.filter(t=>t.duration_mins).reduce((s,t)=>s+(t.duration_mins||0),0)
+    const taskList=pending.map(t=>t.duration_mins?`${t.text} (${t.duration_mins}m)`:t.text).join(', ')
+    lines.push(`Today's tasks${totalMins?' (~'+fmtMins(totalMins)+')':''}: ${taskList}`)
+  }
+
+  // Active + blocked projects
+  const active=P.filter(p=>p.status==='IN PROGRESS'||p.status==='BLOCKED')
+  active.forEach(p=>{
+    const days=p.end?Math.ceil((new Date(p.end+'T12:00:00')-TODAY)/86400000):null
+    const dl=days!==null?(days<0?' — OVERDUE':days<=7?` — due in ${days}d`:''):''
+    const sched=p.sessionsScheduled>0?` (${p.sessionsScheduled} session${p.sessionsScheduled!==1?'s':''} already booked)`:''
+    lines.push(`${p.id} — ${p.name} [${p.priority} priority${dl}]${sched}`)
+  })
+
+  if(!lines.length){toast('Nothing to schedule');return}
+  const msg=`Schedule my work into the calendar:\n${lines.join('\n')}`
   navigator.clipboard.writeText(msg).then(()=>toast('Copied — paste to Claude')).catch(()=>toast(msg))
 }
 
