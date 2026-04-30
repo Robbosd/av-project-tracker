@@ -4,13 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AnyVan — Project Tracker</title>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#f6f7ed;--sidebar:#1f1f1f;--cl:#111827;--cd:#ffffff;
-  --b:#e2e2e2;--mid:#6b7280;--td:#ffffff;--tl:#111827;--gold:#1f1f1f;
+  --b:#e2e2e2;--mid:#6b7280;--tl:#111827;--gold:#1f1f1f;
   --mono:'SF Mono','Menlo','Monaco',monospace;--sans:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;--sw:220px;
 }
 body{background:var(--bg);font-family:var(--sans);color:var(--tl);min-height:100vh;display:flex;overflow-x:hidden}
@@ -32,53 +31,57 @@ body{background:var(--bg);font-family:var(--sans);color:var(--tl);min-height:100
 /* MAIN */
 .main{margin-left:var(--sw);flex:1;min-height:100vh;padding:44px 50px;max-width:calc(100vw - var(--sw))}
 .page{display:none}.page.active{display:block}
-.ph{margin-bottom:36px;display:flex;align-items:flex-end;justify-content:space-between}
+.ph{margin-bottom:28px;display:flex;align-items:flex-end;justify-content:space-between}
 .ph-lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:7px}
 .ph-title{font-size:28px;font-weight:700;letter-spacing:-.01em;line-height:1;color:#111827}
 
 /* STATS */
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:32px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
 .stat{background:var(--cd);border:1px solid var(--b);border-radius:13px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
 .stat-lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:7px}
 .stat-val{font-family:var(--mono);font-size:26px;font-weight:500;line-height:1}
 .stat-sub{font-size:13px;color:var(--mid);margin-top:3px}
-.stat.highlight{background:var(--gold);border-color:transparent}
-.stat.highlight .stat-lbl{color:rgba(255,255,255,0.6)}
-.stat.highlight .stat-val{color:#ffffff}
-.stat.highlight .stat-sub{color:rgba(255,255,255,0.5)}
+.stat.hi{background:var(--gold);border-color:transparent}
+.stat.hi .stat-lbl{color:rgba(255,255,255,0.6)}
+.stat.hi .stat-val{color:#fff}
+.stat.hi .stat-sub{color:rgba(255,255,255,0.5)}
 
-/* DIVIDER */
-.div{display:flex;align-items:center;gap:14px;margin:28px 0 18px}
-.div-lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);white-space:nowrap}
-.div-line{flex:1;height:1px;background:#e2e2e2}
+/* FILTER BAR */
+.filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.fsearch{background:var(--cd);border:1px solid var(--b);border-radius:8px;padding:7px 12px;font-family:var(--sans);font-size:14px;color:var(--tl);outline:none;width:200px;transition:border-color .12s}
+.fsearch:focus{border-color:#1f1f1f}
+.fsearch::placeholder{color:rgba(0,0,0,0.3)}
+.fpills{display:flex;gap:4px}
+.fpill{font-size:12px;padding:5px 11px;border-radius:20px;border:1px solid var(--b);background:var(--cd);color:var(--mid);cursor:pointer;font-family:var(--sans);transition:all .12s;white-space:nowrap}
+.fpill:hover{border-color:#1f1f1f;color:var(--tl)}
+.fpill.on{background:#1f1f1f;border-color:#1f1f1f;color:#fff}
+.fcount{font-family:var(--mono);font-size:12px;color:var(--mid);padding-left:4px}
 
 /* CARDS */
 .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.card{border-radius:14px;padding:20px 22px 18px;position:relative;cursor:pointer;transition:transform .12s,box-shadow .12s}
-.card:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.08)}
-.card.light{background:var(--cd);color:var(--tl);border:1px solid var(--gold)}
-.card.dark{background:var(--cd);color:var(--tl);border:1px solid var(--b)}
-.c-status{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;margin-bottom:10px;opacity:.55}
+.card{background:var(--cd);border:1px solid var(--b);border-radius:14px;padding:20px 22px 18px;cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s}
+.card:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.08);border-color:#d0d0d0}
+.card.c-high{border-left:3px solid #c0392b}
+.card.c-blocked{border-left:3px solid #d4a017}
+.c-status{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;margin-bottom:10px;opacity:.55;display:flex;align-items:center;gap:6px}
 .c-title{font-size:16px;font-weight:600;margin-bottom:5px;letter-spacing:-.01em;line-height:1.3}
-.c-desc{font-size:13px;line-height:1.55;opacity:.6;margin-bottom:14px}
-.c-prog{height:1px;background:rgba(0,0,0,0.08);margin-bottom:10px;position:relative;overflow:hidden}
-.card.dark .c-prog{background:rgba(0,0,0,0.08)}
-.c-prog-fill{position:absolute;top:0;left:0;height:100%;background:currentColor;opacity:.4}
+.c-desc{font-size:13px;line-height:1.55;opacity:.6;margin-bottom:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.c-prog{height:2px;background:rgba(0,0,0,0.07);margin-bottom:12px;border-radius:1px;overflow:hidden}
+.c-prog-fill{height:100%;background:#1f1f1f;opacity:.3;border-radius:1px}
 .c-foot{display:flex;justify-content:space-between;align-items:flex-end}
-.c-tags{display:flex;gap:5px;flex-wrap:wrap}
-.ctag{font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:4px;font-weight:500}
-.card.light .ctag{background:rgba(31,31,31,0.08);color:var(--gold)}
-.card.dark .ctag{background:#f4f4f4;color:#374151}
+.c-tags{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.ctag{font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:4px;font-weight:500;background:#f4f4f4;color:#374151}
 .c-meta-foot{font-family:var(--mono);font-size:12px;opacity:.4;margin-top:3px}
-.rag-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.rag-dot{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .rag-R{background:#C0392B}.rag-A{background:#D4A017}.rag-G{background:#27AE60}
+.sched-badge{background:#dcfce7;color:#166534;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:4px;font-weight:600;cursor:pointer}
+.sched-badge:hover{background:#bbf7d0}
+.dl-warn{background:#fee2e2;color:#b91c1c;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:4px;font-weight:600}
 
-/* ═══ PROJECT DETAIL ═══ */
+/* PROJECT DETAIL */
 .back-btn{font-size:13px;color:var(--mid);cursor:pointer;margin-bottom:22px;display:flex;align-items:center;gap:6px;transition:color .12s;width:fit-content}
 .back-btn:hover{color:var(--tl)}
-.d-layout{display:grid;grid-template-columns:1fr 280px;gap:28px;margin-bottom:0}
-.d-main{}
-.d-side{}
+.d-layout{display:grid;grid-template-columns:1fr 280px;gap:28px}
 .d-id{font-family:var(--mono);font-size:12px;color:var(--mid);margin-bottom:6px}
 .d-title-input{font-size:23px;font-weight:600;letter-spacing:-.01em;background:transparent;border:none;color:var(--tl);width:100%;outline:none;margin-bottom:10px;font-family:var(--sans)}
 .d-title-input:focus{border-bottom:1px solid #e2e2e2;margin-bottom:9px}
@@ -99,20 +102,22 @@ body{background:var(--bg);font-family:var(--sans);color:var(--tl);min-height:100
 .meta-row{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid #f0f0f0}
 .meta-row:last-child{border-bottom:none}
 .mk{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mid);flex-shrink:0}
-.mv{font-size:14px;color:var(--tl);text-align:right;background:transparent;border:none;outline:none;font-family:var(--sans);cursor:pointer;max-width:140px}
+.mv{font-size:14px;color:var(--tl);text-align:right;background:transparent;border:none;outline:none;font-family:var(--sans);cursor:pointer;max-width:160px}
 .mv:focus{border-bottom:1px solid #e2e2e2}
-.mv-sel{background:var(--cd);border:none;color:var(--tl);font-family:var(--sans);font-size:14px;outline:none;cursor:pointer;text-align:right;max-width:140px}
+.mv-sel{background:var(--cd);border:none;color:var(--tl);font-family:var(--sans);font-size:14px;outline:none;cursor:pointer;text-align:right;max-width:160px}
 .mv-sel option{background:#fff}
 .prog-wrap{display:flex;align-items:center;gap:8px}
 .prog-input{width:44px;background:transparent;border:none;color:var(--tl);font-family:var(--mono);font-size:14px;outline:none;text-align:right}
 .prog-input:focus{border-bottom:1px solid #e2e2e2}
-
 .gh-link-box{background:var(--cd);border:1px solid var(--b);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:9px;font-size:14px;color:var(--mid);text-decoration:none;transition:border-color .12s;overflow:hidden}
 .gh-link-box:hover{border-color:#1f1f1f;color:var(--tl)}
 .gh-icon{width:15px;height:15px;flex-shrink:0;opacity:.5}
 
+/* SIDE PANELS */
+.side-panel{background:var(--cd);border:1px solid var(--b);border-radius:10px;padding:12px 14px;margin-top:12px}
+
 /* TABS */
-.tabs{display:flex;gap:0;border-bottom:1px solid #e2e2e2;margin-bottom:22px}
+.tabs{display:flex;border-bottom:1px solid #e2e2e2;margin-bottom:22px}
 .tab{font-size:14px;font-weight:500;padding:9px 18px 8px;cursor:pointer;color:var(--mid);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .12s,border-color .12s;user-select:none}
 .tab:hover{color:var(--tl)}
 .tab.active{color:var(--tl);border-bottom-color:var(--gold)}
@@ -132,12 +137,10 @@ body{background:var(--bg);font-family:var(--sans);color:var(--tl);min-height:100
 .ti::placeholder{color:rgba(0,0,0,0.25)}
 .tsel{background:var(--cd);border:1px solid var(--b);border-radius:8px;padding:9px 10px;font-family:var(--sans);font-size:14px;color:var(--mid);outline:none;cursor:pointer}
 .tdate{background:var(--cd);border:1px solid var(--b);border-radius:8px;padding:9px 10px;font-family:var(--mono);font-size:13px;color:var(--mid);outline:none;width:130px}
-.btn-add{background:var(--gold);color:#ffffff;border:none;border-radius:8px;padding:9px 15px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;transition:opacity .12s;white-space:nowrap}
+.btn-add{background:var(--gold);color:#fff;border:none;border-radius:8px;padding:9px 15px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;transition:opacity .12s;white-space:nowrap}
 .btn-add:hover{opacity:.85}
 .btn-sm{background:#f0f0f0;color:var(--tl);border:none;border-radius:6px;padding:4px 9px;font-family:var(--sans);font-size:13px;cursor:pointer;transition:background .12s}
 .btn-sm:hover{background:#e2e2e2}
-
-/* TASK LIST */
 .task-list{display:flex;flex-direction:column}
 .t-item{background:var(--cd);border:1px solid var(--b);padding:10px 13px;position:relative;transition:background .12s}
 .t-item:not(:last-child){border-bottom-color:transparent}
@@ -149,14 +152,12 @@ body{background:var(--bg);font-family:var(--sans);color:var(--tl);min-height:100
 .t-row{display:flex;align-items:center;gap:9px}
 .chk{width:16px;height:16px;border-radius:4px;border:1px solid #d1d5db;background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .12s}
 .chk.on{background:var(--gold);border-color:var(--gold)}
-.chk.on::after{content:'✓';font-size:12px;color:#ffffff;font-weight:700}
+.chk.on::after{content:'✓';font-size:12px;color:#fff;font-weight:700}
 .t-text{flex:1;font-size:15px;color:var(--tl);background:transparent;border:none;outline:none;font-family:var(--sans)}
 .t-text:focus{background:rgba(0,0,0,0.02);border-radius:3px;padding:0 4px;margin:0 -4px}
 .t-meta{display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0}
 .tp-badge{font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:4px;font-weight:600}
-.tH{background:#fee2e2;color:#b91c1c}
-.tM{background:#fef3c7;color:#92400e}
-.tL{background:#dcfce7;color:#166534}
+.tH{background:#fee2e2;color:#b91c1c}.tM{background:#fef3c7;color:#92400e}.tL{background:#dcfce7;color:#166534}
 .t-due{font-family:var(--mono);font-size:12px;color:var(--mid)}
 .t-due.ov{color:#b91c1c}
 .t-actions{display:flex;gap:3px;opacity:0;transition:opacity .12s}
@@ -165,8 +166,6 @@ body{background:var(--bg);font-family:var(--sans);color:var(--tl);min-height:100
 .ta-btn:hover{color:var(--tl);background:rgba(0,0,0,0.06)}
 .ta-btn.del:hover{color:#b91c1c;background:rgba(185,28,28,0.08)}
 .drag-over{background:rgba(31,31,31,0.03) !important;border-color:rgba(31,31,31,0.2) !important}
-
-/* SUBTASKS */
 .sub-list{margin:8px 0 4px 25px;border-left:2px solid #e2e2e2;display:flex;flex-direction:column}
 .sub-item{display:flex;align-items:center;gap:8px;padding:6px 10px;transition:background .12s}
 .sub-item:hover{background:rgba(0,0,0,0.02)}
@@ -194,13 +193,7 @@ body{background:var(--bg);font-family:var(--sans);color:var(--tl);min-height:100
 .note-in::placeholder{color:rgba(0,0,0,0.3)}
 .note-row{display:flex;justify-content:flex-end;margin-top:8px}
 
-/* CODE */
-.code-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.code-block{background:#f4f4f4;border:1px solid #e2e2e2;border-radius:10px;padding:15px;font-family:var(--mono);font-size:14px;line-height:1.7;color:#374151;outline:none;min-height:100px;white-space:pre;overflow-x:auto;width:100%;display:block}
-.code-block:focus{border-color:#1f1f1f}
-.lang-sel{background:var(--cd);border:1px solid var(--b);border-radius:6px;padding:4px 9px;font-family:var(--mono);font-size:13px;color:var(--mid);outline:none;cursor:pointer}
-
-/* LINKS LIST */
+/* LINKS */
 .link-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .link-anchor{font-size:14px;color:var(--mid);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;transition:color .12s}
 .link-anchor:hover{color:var(--tl)}
@@ -216,181 +209,127 @@ body{background:var(--bg);font-family:var(--sans);color:var(--tl);min-height:100
 .finput:focus,.fsel:focus,.ftarea:focus{border-color:#1f1f1f}
 .ftarea{resize:vertical;min-height:80px;line-height:1.55}
 .fsel option{background:#fff}
-.fsec{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin:22px 0 14px;padding-bottom:7px;border-bottom:1px solid #e2e2e2}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.sub-btn{background:var(--gold);color:#ffffff;border:none;border-radius:9px;padding:12px 28px;font-family:var(--sans);font-size:15px;font-weight:600;cursor:pointer;transition:opacity .14s;margin-top:20px}
+.sub-btn{background:var(--gold);color:#fff;border:none;border-radius:9px;padding:12px 28px;font-family:var(--sans);font-size:15px;font-weight:600;cursor:pointer;transition:opacity .14s;margin-top:20px}
 .sub-btn:hover{opacity:.86}
 
-/* GANTT */
-.gantt-wrap{overflow-x:auto;padding-bottom:16px}
-.g-hdr-row{display:flex;padding-left:260px;margin-bottom:4px}
-.gmo{font-family:var(--mono);font-size:12px;color:var(--mid);text-align:center;flex:1}
-.g-row{display:flex;align-items:center;height:42px;margin-bottom:4px}
-.g-lbl{width:260px;min-width:260px;padding-right:14px;font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
-.g-lbl:hover{color:#1f1f1f}
-.g-lbl-sub{font-family:var(--mono);font-size:11px;color:var(--mid);margin-top:1px}
-.g-track{flex:1;height:26px;background:rgba(0,0,0,0.04);border-radius:5px;position:relative;overflow:hidden;cursor:pointer}
-.g-track:hover{background:rgba(0,0,0,0.06)}
-.g-bar{position:absolute;top:3px;height:20px;border-radius:4px;background:#1f1f1f;opacity:.82;display:flex;align-items:center;padding:0 8px;font-family:var(--mono);font-size:12px;color:#fff;white-space:nowrap;overflow:hidden;transition:opacity .12s}
-.g-bar:hover{opacity:1}
-.g-bar.dep{background:#e2e2e2;color:var(--mid)}
-.g-today{position:absolute;top:0;bottom:0;width:1px;background:rgba(31,31,31,0.2);pointer-events:none}
-
-/* COMPLETED PAGE */
+/* COMPLETED */
 .comp-table{width:100%;border-collapse:collapse}
 .comp-table th{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);padding:8px 12px;text-align:left;border-bottom:1px solid #e2e2e2;background:#f4f4f4;font-weight:600}
 .comp-table td{font-size:15px;padding:10px 12px;border-bottom:1px solid #f0f0f0;color:var(--tl)}
 .comp-table tr:hover td{background:#fafafa}
 .comp-table td.mono{font-family:var(--mono);font-size:13px;color:var(--mid)}
 
-/* REPORTING */
-.r-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-.r-card{background:var(--cd);border:1px solid var(--b);border-radius:13px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
-.r-title{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:16px}
-.r-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.r-bar-lbl{font-size:14px;color:var(--tl);width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
-.r-bar-t{flex:1;height:1px;background:#e2e2e2;position:relative}
-.r-bar-f{position:absolute;top:0;left:0;height:100%;background:#1f1f1f;opacity:.5}
-.r-bar-v{font-family:var(--mono);font-size:12px;color:var(--mid);width:28px;text-align:right;flex-shrink:0}
-.r-hl{background:#1f1f1f;border-radius:13px;padding:20px 24px;color:#fff;grid-column:span 2;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
-.r-hl-lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.55;margin-bottom:5px}
-.r-hl-val{font-family:var(--mono);font-size:38px;font-weight:500;letter-spacing:-.02em;line-height:1}
-.r-hl-sub{font-size:13px;opacity:.5;margin-top:3px}
-.r-big-num{font-family:var(--mono);font-size:30px;font-weight:500;color:var(--tl);line-height:1;margin-bottom:4px}
-.r-num-lbl{font-size:13px;color:var(--mid)}
+/* SCHEDULING */
+.sched-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:13px}
+.sched-item:last-child{border-bottom:none}
+.sched-date{font-family:var(--mono);font-size:11px;color:var(--mid);flex-shrink:0;min-width:60px;padding-top:1px}
+.sched-title{flex:1;line-height:1.4;color:var(--tl)}
+.btn-sched{background:#103a10;color:#5cb85c;border:none;border-radius:7px;padding:8px 14px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .12s;width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-sched:hover{opacity:.85}
+.sched-empty{font-size:13px;color:var(--mid);font-family:var(--mono);padding:4px 0}
 
 /* TOAST */
 .toast{position:fixed;bottom:26px;right:26px;background:#1f1f1f;color:#fff;padding:10px 18px;border-radius:9px;font-size:14px;font-weight:500;opacity:0;transform:translateY(6px);transition:opacity .18s,transform .18s;pointer-events:none;z-index:999}
 .toast.show{opacity:1;transform:translateY(0)}
 
-/* MISC */
+/* RAG buttons */
+.rag-btns{display:flex;gap:8px;margin-bottom:10px}
+.rag-btn{flex:1;padding:7px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600;font-family:var(--sans)}
+.rag-g{background:#103a10;color:#5cb85c}
+.rag-a{background:#3a2d10;color:#d4a017}
+.rag-r{background:#3a1010;color:#e87474}
+
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#e2e2e2;border-radius:2px}
-input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0);cursor:pointer}
-
-/* SCHEDULING */
-.sched-badge{background:#dcfce7;color:#166534;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:4px;font-weight:600}
-.sched-panel{background:var(--cd);border:1px solid var(--b);border-radius:10px;padding:12px 14px;margin-top:12px}
-.sched-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:13px;color:var(--tl)}
-.sched-item:last-child{border-bottom:none}
-.sched-date{font-family:var(--mono);font-size:11px;color:var(--mid);flex-shrink:0;min-width:72px;padding-top:1px}
-.sched-title{flex:1;line-height:1.4}
-.btn-sched{background:#103a10;color:#5cb85c;border:none;border-radius:7px;padding:8px 14px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .12s;width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px}
-.btn-sched:hover{opacity:.85}
-.sched-empty{font-size:13px;color:var(--mid);font-family:var(--mono);padding:4px 0}
-
-/* DAILY TASKS */
-.dt-streak-badge{background:#1f1f1f;color:#fff;border-radius:8px;padding:6px 14px;font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.04em;flex-shrink:0}
-.dt-progress{background:var(--cd);border:1px solid var(--b);border-radius:13px;padding:18px 22px;margin-bottom:26px;display:flex;align-items:center;gap:22px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
-.dt-prog-left{flex-shrink:0}
-.dt-prog-nums{font-family:var(--mono);font-size:30px;font-weight:500;line-height:1;color:var(--tl)}
-.dt-prog-sub{font-size:13px;color:var(--mid);margin-top:4px}
-.dt-prog-bar-wrap{flex:1;height:4px;background:#e8e8e8;border-radius:2px;overflow:hidden}
-.dt-prog-bar-fill{height:100%;background:#1f1f1f;border-radius:2px;transition:width .4s cubic-bezier(.4,0,.2,1)}
-.dt-pct{font-family:var(--mono);font-size:22px;font-weight:500;color:var(--mid);flex-shrink:0;min-width:50px;text-align:right}
-.dt-add-row{display:flex;gap:8px;margin-bottom:26px}
-.dt-input{flex:1;background:var(--cd);border:1px solid var(--b);border-radius:9px;padding:10px 14px;font-family:var(--sans);font-size:15px;color:var(--tl);outline:none;transition:border-color .12s;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
-.dt-input:focus{border-color:#1f1f1f}
-.dt-input::placeholder{color:rgba(0,0,0,0.25)}
-.dt-nav-btn{background:none;border:1px solid var(--b);border-radius:6px;padding:5px 13px;font-family:var(--mono);font-size:12px;color:var(--mid);cursor:pointer;transition:all .12s;letter-spacing:.04em;user-select:none}
-.dt-nav-btn:hover{border-color:#1f1f1f;color:var(--tl)}
-.dt-date-chip{font-family:var(--mono);font-size:13px;color:var(--tl);font-weight:500;padding:0 6px}
-.dt-empty-msg{font-size:14px;color:var(--mid);padding:14px 2px;font-family:var(--mono)}
-.dt-foot-row{display:flex;justify-content:space-between;align-items:center;margin-top:22px;flex-wrap:wrap;gap:8px}
-.dt-carry-btn{background:var(--gold);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;transition:opacity .12s}
-.dt-carry-btn:hover{opacity:.85}
+input[type=date]::-webkit-calendar-picker-indicator{cursor:pointer}
 </style>
 </head>
 <body>
 
-
 <nav class="sb">
   <div class="sb-logo"><div class="wm">AnyVan</div><div class="sub">Project Tracker</div></div>
   <div class="nav">
-    <div class="nav-sec">Daily</div>
-    <div class="ni" onclick="nav('daily')"><span class="ndot"></span>Today</div>
-    <div class="nav-sec" style="margin-top:6px">Projects</div>
+    <div class="nav-sec">Projects</div>
     <div class="ni active" onclick="nav('overview')"><span class="ndot"></span>Overview</div>
     <div class="ni" onclick="nav('log')"><span class="ndot"></span>Log project</div>
-    <div class="ni" onclick="nav('gantt')"><span class="ndot"></span>Gantt</div>
     <div class="ni" onclick="nav('completed')"><span class="ndot"></span>Completed</div>
-    <div class="ni" onclick="nav('reporting')"><span class="ndot"></span>Reporting</div>
   </div>
   <div class="sb-foot" id="sf">Loading…</div>
 </nav>
 
 <main class="main">
 
-<!-- ═══ OVERVIEW ═══ -->
+<!-- OVERVIEW -->
 <div id="page-overview" class="page active">
   <div class="ph"><div><div class="ph-lbl">All initiatives</div><div class="ph-title">Project tracker</div></div></div>
   <div class="stats" id="stat-row"></div>
-  <div class="div"><span class="div-lbl">Active</span><span class="div-line"></span></div>
-  <div class="cards" id="c-active"></div>
-  <div class="div"><span class="div-lbl">Backlog</span><span class="div-line"></span></div>
-  <div class="cards" id="c-backlog"></div>
+  <div class="filter-bar">
+    <input class="fsearch" id="ov-q" type="text" placeholder="Search…" oninput="renderOverview()">
+    <div class="fpills" id="sp">
+      <button class="fpill on" data-v="" onclick="setFilter('s',this)">All</button>
+      <button class="fpill" data-v="active" onclick="setFilter('s',this)">Active</button>
+      <button class="fpill" data-v="BLOCKED" onclick="setFilter('s',this)">Blocked</button>
+      <button class="fpill" data-v="BACKLOG" onclick="setFilter('s',this)">Backlog</button>
+    </div>
+    <div class="fpills" id="pp">
+      <button class="fpill" data-v="High" onclick="setFilter('p',this)">High</button>
+      <button class="fpill" data-v="Medium" onclick="setFilter('p',this)">Med</button>
+      <button class="fpill" data-v="Low" onclick="setFilter('p',this)">Low</button>
+    </div>
+    <span class="fcount" id="fcount"></span>
+  </div>
+  <div class="cards" id="c-cards"></div>
 </div>
 
-<!-- ═══ DETAIL ═══ -->
+<!-- DETAIL -->
 <div id="page-detail" class="page">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
     <div class="back-btn" style="margin-bottom:0" onclick="backToOverview()">← Back to overview</div>
-    <button onclick="deleteProject()" style="background:rgba(192,57,43,0.12);color:#e87474;border:none;border-radius:7px;padding:6px 13px;font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:background .12s" onmouseover="this.style.background='rgba(192,57,43,0.22)'" onmouseout="this.style.background='rgba(192,57,43,0.12)'">Delete project</button>
+    <button onclick="deleteProject()" style="background:rgba(192,57,43,0.12);color:#e87474;border:none;border-radius:7px;padding:6px 13px;font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer" onmouseover="this.style.background='rgba(192,57,43,0.22)'" onmouseout="this.style.background='rgba(192,57,43,0.12)'">Delete project</button>
   </div>
   <div class="d-layout">
     <div class="d-main">
       <div class="d-id" id="d-id"></div>
       <input class="d-title-input" id="d-title" type="text" onblur="sf('name',this.value)">
       <div class="d-badges" id="d-badges"></div>
-      <textarea class="ea" id="d-desc" rows="2" placeholder="Short project description…" onblur="sf('desc',this.value)" style="min-height:56px;margin-bottom:16px"></textarea>
-
+      <textarea class="ea" id="d-desc" rows="3" placeholder="Short project description…" onblur="sf('desc',this.value)" style="min-height:64px;margin-bottom:16px"></textarea>
       <div class="tabs">
         <div class="tab active" onclick="stab('tasks')">Tasks</div>
         <div class="tab" onclick="stab('scope')">Scope</div>
         <div class="tab" onclick="stab('notes')">Notes</div>
-        <div class="tab" onclick="stab('code')">Code &amp; links</div>
+        <div class="tab" onclick="stab('links')">Links</div>
       </div>
-
-      <!-- TASKS -->
       <div class="tp active" id="tp-tasks">
         <div class="task-top">
-          <input class="ti" id="ta-txt" type="text" placeholder="Type a task and press Enter or click Add…" onkeydown="if(event.key==='Enter')addTask()">
+          <input class="ti" id="ta-txt" type="text" placeholder="Type a task and press Enter…" onkeydown="if(event.key==='Enter')addTask()">
           <select class="tsel" id="ta-pri"><option value="Medium">Med</option><option value="High">High</option><option value="Low">Low</option></select>
-          <input class="tdate" id="ta-due" type="date" title="Due date">
+          <input class="tdate" id="ta-due" type="date">
           <button class="btn-add" onclick="addTask()">+ Add</button>
         </div>
         <div class="task-list" id="tlist"></div>
       </div>
-
-      <!-- SCOPE -->
       <div class="tp" id="tp-scope">
         <div class="two-col mb14">
-          <div><div class="slbl">Problem statement</div><textarea class="ea" id="sc-prob" rows="5" placeholder="What problem does this solve? Why now?" onblur="sf('problem',this.value)"></textarea></div>
-          <div><div class="slbl">Scope &amp; objectives</div><textarea class="ea" id="sc-scope" rows="5" placeholder="What's in scope? Key objectives and success criteria?" onblur="sf('scope',this.value)"></textarea></div>
+          <div><div class="slbl">Problem statement</div><textarea class="ea" id="sc-prob" rows="5" placeholder="What problem does this solve?" onblur="sf('problem',this.value)"></textarea></div>
+          <div><div class="slbl">Scope &amp; objectives</div><textarea class="ea" id="sc-scope" rows="5" placeholder="What's in scope? Key objectives?" onblur="sf('scope',this.value)"></textarea></div>
         </div>
         <div class="two-col mb14">
           <div><div class="slbl">Assumptions &amp; constraints</div><textarea class="ea" id="sc-cons" rows="4" placeholder="Known constraints, assumptions, risks…" onblur="sf('constraints',this.value)"></textarea></div>
-          <div><div class="slbl">Definition of done</div><textarea class="ea" id="sc-dod" rows="4" placeholder="What does done look like? How do we measure success?" onblur="sf('dod',this.value)"></textarea></div>
+          <div><div class="slbl">Definition of done</div><textarea class="ea" id="sc-dod" rows="4" placeholder="What does done look like?" onblur="sf('dod',this.value)"></textarea></div>
         </div>
-        <div class="mb14"><div class="slbl">Stakeholders &amp; team</div><textarea class="ea" id="sc-stake" rows="3" placeholder="Who is involved? Who needs to sign off?" onblur="sf('stakeholders',this.value)" style="min-height:56px"></textarea></div>
+        <div class="mb14"><div class="slbl">Stakeholders &amp; team</div><textarea class="ea" id="sc-stake" rows="3" placeholder="Who is involved?" onblur="sf('stakeholders',this.value)" style="min-height:56px"></textarea></div>
       </div>
-
-      <!-- NOTES -->
       <div class="tp" id="tp-notes">
         <div class="note-list" id="note-list"></div>
         <textarea class="note-in" id="note-in" placeholder="Leave a note, update, or decision record…"></textarea>
         <div class="note-row"><button class="btn-add" onclick="addNote()">Add note</button></div>
       </div>
-
-      <!-- CODE & LINKS -->
-      <div class="tp" id="tp-code">
+      <div class="tp" id="tp-links">
         <div class="mb14">
           <div class="slbl">GitHub repository</div>
-          <div style="display:flex;gap:8px">
-            <input class="finput" id="gh-in" type="text" placeholder="https://github.com/Robbosd/…" style="flex:1" onblur="saveGithub()">
-            <button class="btn-add" onclick="saveGithub()">Save</button>
-          </div>
+          <div style="display:flex;gap:8px"><input class="finput" id="gh-in" type="text" placeholder="https://github.com/…" style="flex:1" onblur="saveGithub()"><button class="btn-add" onclick="saveGithub()">Save</button></div>
         </div>
-        <div class="mb14">
+        <div>
           <div class="slbl">Useful links</div>
           <div id="links-list" style="margin-bottom:10px"></div>
           <div style="display:flex;gap:8px">
@@ -399,45 +338,28 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0);cursor:poin
             <button class="btn-add" onclick="addLink()">+ Add</button>
           </div>
         </div>
-        <div>
-          <div class="code-hdr">
-            <div class="slbl" style="margin:0">Code snippet</div>
-            <select class="lang-sel" id="code-lang" onchange="sf('codeLang',this.value)">
-              <option>python</option><option>javascript</option><option>bash</option>
-              <option>sql</option><option>json</option><option>yaml</option><option>plain</option>
-            </select>
-          </div>
-          <div class="code-block" id="code-area" contenteditable="true" spellcheck="false" onblur="sf('code',this.innerText)"></div>
-        </div>
       </div>
-    </div><!-- /d-main -->
-
+    </div>
     <div class="d-side">
       <div class="meta-box" id="d-meta"></div>
       <div id="d-gh-wrap"></div>
-
-      <!-- RAG -->
-      <div style="margin-top:12px;background:var(--cd);border:1px solid var(--b);border-radius:10px;padding:12px 14px">
+      <div class="side-panel">
         <div class="slbl" style="margin-bottom:10px">RAG status</div>
-        <div style="display:flex;gap:8px">
-          <button onclick="setRag('G')" style="flex:1;padding:7px;border-radius:6px;border:none;cursor:pointer;background:#103a10;color:#5cb85c;font-size:13px;font-weight:600;font-family:var(--sans)">● Green</button>
-          <button onclick="setRag('A')" style="flex:1;padding:7px;border-radius:6px;border:none;cursor:pointer;background:#3a2d10;color:#d4a017;font-size:13px;font-weight:600;font-family:var(--sans)">● Amber</button>
-          <button onclick="setRag('R')" style="flex:1;padding:7px;border-radius:6px;border:none;cursor:pointer;background:#3a1010;color:#e87474;font-size:13px;font-weight:600;font-family:var(--sans)">● Red</button>
+        <div class="rag-btns">
+          <button class="rag-btn rag-g" onclick="setRag('G')">● Green</button>
+          <button class="rag-btn rag-a" onclick="setRag('A')">● Amber</button>
+          <button class="rag-btn rag-r" onclick="setRag('R')">● Red</button>
         </div>
-        <textarea class="ea" id="rag-note" style="min-height:50px;margin-top:10px;font-size:14px" placeholder="RAG comment…" onblur="sf('ragNote',this.value)"></textarea>
+        <textarea class="ea" id="rag-note" style="min-height:50px;font-size:14px" placeholder="RAG comment…" onblur="sf('ragNote',this.value)"></textarea>
       </div>
-
-      <!-- Task summary -->
-      <div style="margin-top:12px;background:var(--cd);border:1px solid var(--b);border-radius:10px;padding:12px 14px">
+      <div class="side-panel">
         <div class="slbl" style="margin-bottom:8px">Task progress</div>
         <div id="task-summary" style="font-size:14px;color:var(--mid)"></div>
-        <div id="task-prog-bar" style="height:1px;background:rgba(255,255,255,0.08);margin-top:10px;position:relative;overflow:hidden;border-radius:1px">
-          <div id="task-prog-fill" style="position:absolute;top:0;left:0;height:100%;background:var(--cl);opacity:.5;transition:width .3s"></div>
+        <div style="height:1px;background:#e8e8e8;margin-top:10px;border-radius:1px;overflow:hidden">
+          <div id="task-prog-fill" style="height:100%;background:#1f1f1f;opacity:.5;transition:width .3s;width:0%"></div>
         </div>
       </div>
-
-      <!-- Scheduled sessions -->
-      <div class="sched-panel" id="sched-panel">
+      <div class="side-panel" id="sched-panel">
         <div class="slbl" style="margin-bottom:8px">Scheduled sessions</div>
         <div id="sched-list"><div class="sched-empty">No sessions booked yet</div></div>
         <button class="btn-sched" onclick="scheduleProject()">📅 Schedule next session</button>
@@ -446,1125 +368,522 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0);cursor:poin
   </div>
 </div>
 
-<!-- ═══ LOG PROJECT ═══ -->
+<!-- LOG PROJECT -->
 <div id="page-log" class="page">
   <div class="ph"><div><div class="ph-lbl">New entry</div><div class="ph-title">Log a project</div></div></div>
-  <div class="fsec">Core details</div>
   <div class="form-grid">
     <div class="fg s2"><label class="flbl">Project name <span class="req">*</span></label><input class="finput" id="f-name" type="text" placeholder="e.g. ClearPass invoice validation"></div>
     <div class="fg s2"><label class="flbl">Description <span class="req">*</span></label><textarea class="ftarea" id="f-desc" placeholder="What does this do and what problem does it solve?"></textarea></div>
     <div class="fg"><label class="flbl">Business unit</label><select class="fsel" id="f-bu"><option>Storage</option><option>Finance</option><option>Sales / Commercial</option><option>Customer Ops</option><option>People / HR</option><option>Tech / Engineering</option><option>Marketing</option><option>Data / BI</option><option>Cross-functional</option></select></div>
-    <div class="fg"><label class="flbl">Status</label><select class="fsel" id="f-status"><option value="IN PROGRESS">In progress</option><option value="BACKLOG">Backlog</option><option value="BLOCKED">Blocked</option><option value="DONE">Done</option></select></div>
+    <div class="fg"><label class="flbl">Priority</label><select class="fsel" id="f-priority"><option>High</option><option selected>Medium</option><option>Low</option></select></div>
     <div class="fg"><label class="flbl">Owner</label><input class="finput" id="f-owner" type="text" placeholder="e.g. Scott Robinson"></div>
-    <div class="fg"><label class="flbl">Priority</label><select class="fsel" id="f-priority"><option>High</option><option>Medium</option><option>Low</option></select></div>
-  </div>
-  <div class="fsec">Impact &amp; effort</div>
-  <div class="form-grid">
-    <div class="fg"><label class="flbl">Primary impact</label><select class="fsel" id="f-impact"><option>Headcount efficiency</option><option>Cost reduction</option><option>Revenue growth</option><option>All three</option></select></div>
-    <div class="fg"><label class="flbl">Est. hours saved / month <span class="req">*</span></label><input class="finput" id="f-hours" type="number" placeholder="e.g. 80 — enter 0 if unknown"></div>
-    <div class="fg"><label class="flbl">Build effort</label><select class="fsel" id="f-effort"><option>Small — days</option><option>Medium — weeks</option><option>Large — months</option></select></div>
-    <div class="fg"><label class="flbl">% complete <span class="req">*</span></label><input class="finput" id="f-prog" type="number" placeholder="0–100" min="0" max="100"></div>
-    <div class="fg"><label class="flbl">Session length (mins)</label><input class="finput" id="f-session" type="number" placeholder="90" value="90" min="30" max="240"></div>
-  </div>
-  <div class="fsec">Timeline &amp; linking</div>
-  <div class="form-grid">
-    <div class="fg"><label class="flbl">Start date</label><input class="finput" id="f-start" type="date"></div>
     <div class="fg"><label class="flbl">Target end date</label><input class="finput" id="f-end" type="date"></div>
-    <div class="fg s2"><label class="flbl">Dependencies / blockers</label><input class="finput" id="f-deps" type="text" placeholder="e.g. Dep: May admin changes"></div>
-    <div class="fg s2"><label class="flbl">GitHub repo URL</label><input class="finput" id="f-github" type="text" placeholder="https://github.com/Robbosd/…"></div>
-    <div class="fg s2"><label class="flbl">Tags (comma separated)</label><input class="finput" id="f-tags" type="text" placeholder="e.g. Headcount, Cost, Revenue"></div>
-  </div>
-  <div class="fsec">Scope <span style="color:var(--mid);font-size:11px;letter-spacing:0;text-transform:none;font-weight:400">— optional, can fill in later</span></div>
-  <div class="form-grid">
-    <div class="fg s2"><label class="flbl">Problem statement</label><textarea class="ftarea" id="f-problem" placeholder="What problem does this solve?"></textarea></div>
-    <div class="fg s2"><label class="flbl">Definition of done</label><textarea class="ftarea" id="f-dod" placeholder="How do we know this is complete?"></textarea></div>
+    <div class="fg"><label class="flbl">Status</label><select class="fsel" id="f-status"><option value="BACKLOG">Backlog</option><option value="IN PROGRESS">In progress</option><option value="BLOCKED">Blocked</option></select></div>
+    <div class="fg"><label class="flbl">Build effort</label><select class="fsel" id="f-effort"><option>Small — days</option><option>Medium — weeks</option><option>Large — months</option></select></div>
   </div>
   <button class="sub-btn" onclick="submitProject()">Log initiative →</button>
 </div>
 
-<!-- ═══ GANTT ═══ -->
-<div id="page-gantt" class="page">
-  <div class="ph"><div><div class="ph-lbl">Timeline</div><div class="ph-title">Gantt</div></div></div>
-  <div class="gantt-wrap"><div class="g-hdr-row" id="g-hdr"></div><div id="g-rows"></div></div>
-</div>
-
-<!-- ═══ COMPLETED ═══ -->
+<!-- COMPLETED -->
 <div id="page-completed" class="page">
   <div class="ph"><div><div class="ph-lbl">Archive</div><div class="ph-title">Completed projects</div></div></div>
   <div id="comp-empty" style="font-size:15px;color:var(--mid);padding:16px 0">No completed projects yet.</div>
   <table class="comp-table" id="comp-table" style="display:none">
-    <thead><tr><th>Project</th><th>BU</th><th>Owner</th><th>Completed</th><th>Hours saved/mo</th><th></th></tr></thead>
+    <thead><tr><th>Project</th><th>BU</th><th>Owner</th><th>Completed</th><th></th></tr></thead>
     <tbody id="comp-body"></tbody>
   </table>
-</div>
-
-<!-- ═══ REPORTING ═══ -->
-<div id="page-reporting" class="page">
-  <div class="ph"><div><div class="ph-lbl">Analytics</div><div class="ph-title">Reporting</div></div></div>
-  <div class="r-grid">
-    <div class="r-hl">
-      <div><div class="r-hl-lbl">Headline impact</div><div class="r-hl-val" id="r-hrs">0 hrs</div><div class="r-hl-sub">estimated hours saved per month</div></div>
-      <div style="text-align:right"><div class="r-hl-lbl">Total</div><div class="r-hl-val" id="r-total">0</div><div class="r-hl-sub">projects tracked</div></div>
-    </div>
-    <div class="r-card">
-      <div class="r-title">Progress breakdown</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:4px">
-        <div><div class="r-big-num" id="r-done">0</div><div class="r-num-lbl">Completed</div></div>
-        <div><div class="r-big-num" id="r-ip">0</div><div class="r-num-lbl">In progress</div></div>
-        <div><div class="r-big-num" id="r-bl">0</div><div class="r-num-lbl">Backlog</div></div>
-      </div>
-    </div>
-    <div class="r-card">
-      <div class="r-title">Completion rate</div>
-      <div id="r-comp-pct" style="font-family:var(--mono);font-size:40px;font-weight:500;color:var(--tl);line-height:1;margin-bottom:5px">0%</div>
-      <div style="height:1px;background:rgba(255,255,255,0.08);position:relative;overflow:hidden;border-radius:1px">
-        <div id="r-comp-bar" style="position:absolute;top:0;left:0;height:100%;background:var(--cl);opacity:.5;transition:width .5s"></div>
-      </div>
-      <div style="font-size:13px;color:var(--mid);margin-top:5px" id="r-comp-sub"></div>
-    </div>
-    <div class="r-card"><div class="r-title">By impact type</div><div id="r-impact"></div></div>
-    <div class="r-card"><div class="r-title">By status</div><div id="r-status"></div></div>
-    <div class="r-card"><div class="r-title">Dependencies / blockers</div><div id="r-deps"></div></div>
-    <div class="r-card"><div class="r-title">RAG overview</div><div id="r-rag"></div></div>
-  </div>
-</div>
-
-<!-- ═══ DAILY TASKS ═══ -->
-<div id="page-daily" class="page">
-  <div class="ph" style="margin-bottom:20px">
-    <div>
-      <div class="ph-lbl" id="dt-day">Today — Monday</div>
-      <div class="ph-title" id="dt-date">28 April 2026</div>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid)">Streak</div>
-      <div class="dt-streak-badge" id="dt-streak">—</div>
-    </div>
-  </div>
-
-  <!-- Day navigation -->
-  <div style="display:flex;align-items:center;gap:6px;margin-bottom:22px">
-    <button class="dt-nav-btn" onclick="dtNavDay(-1)">← Prev</button>
-    <span class="dt-date-chip" id="dt-nav-label">Today</span>
-    <button class="dt-nav-btn" id="dt-next-btn" onclick="dtNavDay(1)">Next →</button>
-  </div>
-
-  <!-- Progress -->
-  <div class="dt-progress">
-    <div class="dt-prog-left">
-      <div class="dt-prog-nums" id="dt-prog-nums">0 / 0</div>
-      <div class="dt-prog-sub" id="dt-prog-sub">Add your first task above</div>
-    </div>
-    <div class="dt-prog-bar-wrap"><div class="dt-prog-bar-fill" id="dt-prog-fill" style="width:0%"></div></div>
-    <div class="dt-pct" id="dt-pct">—</div>
-  </div>
-
-  <!-- Add task -->
-  <div class="dt-add-row">
-    <input class="dt-input" id="dt-inp" type="text" placeholder="What needs to get done today?" onkeydown="if(event.key==='Enter')dtAdd()">
-    <select class="tsel" id="dt-pri"><option value="Medium">Med</option><option value="High">High</option><option value="Low">Low</option></select>
-    <button class="btn-add" onclick="dtAdd()">+ Add</button>
-  </div>
-
-  <!-- Todo section -->
-  <div id="dt-todo-div">
-    <div class="div"><span class="div-lbl" id="dt-todo-lbl">Todo</span><span class="div-line"></span></div>
-    <div class="task-list" id="dt-todo-list"></div>
-  </div>
-
-  <!-- Done section -->
-  <div id="dt-done-div" style="display:none">
-    <div class="div"><span class="div-lbl" id="dt-done-lbl">Done</span><span class="div-line"></span></div>
-    <div class="task-list" id="dt-done-list"></div>
-  </div>
-
-  <!-- Footer -->
-  <div class="dt-foot-row">
-    <button class="dt-carry-btn" id="dt-carry" onclick="dtCarryOver()" style="display:none"></button>
-    <div style="display:flex;gap:8px;margin-left:auto">
-      <button class="btn-sm" onclick="dtClearDone()">Clear done</button>
-    </div>
-  </div>
 </div>
 
 </main>
 <div class="toast" id="toast"></div>
 
 <script>
-// ── SUPABASE ──────────────────────────────────────────────────
-const SUPABASE_URL = 'https://loyvicdabsncwhssjkxy.supabase.co'
-const SUPABASE_ANON_KEY = 'sb_publishable_QWQOo0CWifid4QyyRzRYvQ_P5DP8ecZ'
-const { createClient } = window.supabase
-const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+const SUPABASE_URL='https://loyvicdabsncwhssjkxy.supabase.co'
+const SUPABASE_ANON_KEY='sb_publishable_QWQOo0CWifid4QyyRzRYvQ_P5DP8ecZ'
+const {createClient}=window.supabase
+const db=createClient(SUPABASE_URL,SUPABASE_ANON_KEY)
 
-// ── GLOBALS ───────────────────────────────────────────────────
-const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const TODAY=new Date();
-let CP=null, dragSrc=null;
-let P=[];
+const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const TODAY=new Date()
+let CP=null,dragSrc=null,P=[]
+let F={s:'',p:''}
 
-// ── DATA MAPPING ──────────────────────────────────────────────
-function toLocal(row){
-  return {
-    id:row.id, name:row.name, desc:row.description||'',
-    status:row.status||'BACKLOG', bu:row.bu||'Storage',
-    owner:row.owner||'', priority:row.priority||'Medium',
-    impact:row.impact||'', hours:row.hours_saved,
-    effort:row.effort||'Medium — weeks', progress:row.progress||0,
-    start:row.start_date||'', end:row.end_date||'',
-    deps:row.dependencies||'', tags:row.tags||[],
-    added:row.added_date||row.created_at?.slice(0,10)||'',
-    github:row.github_url||'', problem:row.problem||'',
-    scope:row.scope||'', constraints:row.constraints||'',
-    dod:row.dod||'', stakeholders:row.stakeholders||'',
-    rag:row.rag||'', ragNote:row.rag_note||'',
-    code:row.code||'', codeLang:row.code_lang||'python',
-    completedDate:row.completed_date||'',
-    sessionMins:row.session_length_mins||90,
-    sessionsScheduled:row.sessions_scheduled||0,
-    scheduledSessions:[],
-    tasks:[], notes:[], links:[],
-  };
+function toLocal(r){
+  return{
+    id:r.id,name:r.name,desc:r.description||'',
+    status:r.status||'BACKLOG',bu:r.bu||'Storage',
+    owner:r.owner||'',priority:r.priority||'Medium',
+    impact:r.impact||'',hours:r.hours_saved,
+    effort:r.effort||'Medium — weeks',progress:r.progress||0,
+    start:r.start_date||'',end:r.end_date||'',
+    deps:r.dependencies||'',tags:r.tags||[],
+    added:r.added_date||r.created_at?.slice(0,10)||'',
+    github:r.github_url||'',problem:r.problem||'',
+    scope:r.scope||'',constraints:r.constraints||'',
+    dod:r.dod||'',stakeholders:r.stakeholders||'',
+    rag:r.rag||'',ragNote:r.rag_note||'',
+    code:r.code||'',codeLang:r.code_lang||'python',
+    completedDate:r.completed_date||'',
+    sessionMins:r.session_length_mins||90,
+    sessionsScheduled:r.sessions_scheduled||0,
+    scheduledSessions:[],tasks:[],notes:[],links:[],
+  }
 }
 
-const DB_FIELD={
-  name:'name', desc:'description', status:'status', bu:'bu',
-  owner:'owner', priority:'priority', impact:'impact',
-  hours:'hours_saved', effort:'effort', progress:'progress',
-  start:'start_date', end:'end_date', deps:'dependencies',
-  github:'github_url', problem:'problem', scope:'scope',
-  constraints:'constraints', dod:'dod', stakeholders:'stakeholders',
-  rag:'rag', ragNote:'rag_note', code:'code', codeLang:'code_lang',
+const DBF={
+  name:'name',desc:'description',status:'status',bu:'bu',
+  owner:'owner',priority:'priority',impact:'impact',
+  hours:'hours_saved',effort:'effort',progress:'progress',
+  start:'start_date',end:'end_date',deps:'dependencies',
+  github:'github_url',problem:'problem',scope:'scope',
+  constraints:'constraints',dod:'dod',stakeholders:'stakeholders',
+  rag:'rag',ragNote:'rag_note',code:'code',codeLang:'code_lang',
   completedDate:'completed_date',
-  sessionMins:'session_length_mins',
-  sessionsScheduled:'sessions_scheduled',
-};
+  sessionMins:'session_length_mins',sessionsScheduled:'sessions_scheduled',
+}
 
-// ── LOAD DATA ─────────────────────────────────────────────────
 async function loadProjects(){
-  try {
-    const { data, error } = await db.from('projects').select('*').order('created_at',{ ascending:false });
-    if(error) throw error;
-    P=(data||[]).map(toLocal);
-    renderOverview(); updateCount();
-    const hash=location.hash.slice(1);
-    if(hash){const found=P.find(p=>p.id===hash);if(found)openProject(hash);}
-  } catch(e){ toast('Error loading projects: '+e.message); }
+  try{
+    const{data,error}=await db.from('projects').select('*').order('created_at',{ascending:false})
+    if(error)throw error
+    P=(data||[]).map(toLocal)
+    renderOverview();updateCount()
+    const hash=location.hash.slice(1)
+    if(hash){const f=P.find(p=>p.id===hash);if(f)openProject(hash)}
+  }catch(e){toast('Error loading: '+e.message)}
 }
 
 async function loadProjectDetail(id){
-  try {
-    const [tRes,nRes,lRes]=await Promise.all([
-      db.from('tasks').select('*, subtasks(*)').eq('project_id',id).order('sort_order'),
-      db.from('notes').select('*').eq('project_id',id).order('created_at',{ ascending:false }),
+  try{
+    const[tR,nR,lR]=await Promise.all([
+      db.from('tasks').select('*,subtasks(*)').eq('project_id',id).order('sort_order'),
+      db.from('notes').select('*').eq('project_id',id).order('created_at',{ascending:false}),
       db.from('links').select('*').eq('project_id',id),
-    ]);
-    if(tRes.error) throw tRes.error;
-    if(nRes.error) throw nRes.error;
-    if(lRes.error) throw lRes.error;
-    const p=P.find(x=>x.id===id);
-    if(!p) return;
-    p.tasks=(tRes.data||[]).map(t=>({
-      id:t.id, text:t.text, done:t.done,
-      priority:t.priority||'Medium', due:t.due_date||'',
+    ])
+    if(tR.error)throw tR.error
+    if(nR.error)throw nR.error
+    if(lR.error)throw lR.error
+    const p=P.find(x=>x.id===id);if(!p)return
+    p.tasks=(tR.data||[]).map(t=>({
+      id:t.id,text:t.text,done:t.done,priority:t.priority||'Medium',due:t.due_date||'',
       showSubs:false,
-      subtasks:(t.subtasks||[]).sort((a,b)=>a.sort_order-b.sort_order).map(s=>({
-        id:s.id, text:s.text, done:s.done,
-      })),
-    }));
-    p.notes=(nRes.data||[]).map(n=>({
-      id:n.id, text:n.text,
-      author:n.author||'Scott R.',
-      date:n.created_at?.slice(0,10)||'',
-    }));
-    p.links=(lRes.data||[]).map(l=>({
-      id:l.id, label:l.label||l.url, url:l.url,
-    }));
-  } catch(e){ toast('Error loading project: '+e.message); }
+      subtasks:(t.subtasks||[]).sort((a,b)=>a.sort_order-b.sort_order).map(s=>({id:s.id,text:s.text,done:s.done})),
+    }))
+    p.notes=(nR.data||[]).map(n=>({id:n.id,text:n.text,author:n.author||'Scott R.',date:n.created_at?.slice(0,10)||''}))
+    p.links=(lR.data||[]).map(l=>({id:l.id,label:l.label||l.url,url:l.url}))
+  }catch(e){toast('Error loading project: '+e.message)}
 }
 
-// ── NAVIGATION ────────────────────────────────────────────────
 function nav(page){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+page).classList.add('active');
-  const el=document.querySelector(`[onclick="nav('${page}')"]`);
-  if(el) el.classList.add('active');
-  if(page==='overview') renderOverview();
-  if(page==='gantt') renderGantt();
-  if(page==='reporting') renderReporting();
-  if(page==='completed') renderCompleted();
-  if(page==='daily') initDaily();
-  updateCount();
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'))
+  document.getElementById('page-'+page).classList.add('active')
+  document.querySelector(`[onclick="nav('${page}')"]`)?.classList.add('active')
+  if(page==='overview')renderOverview()
+  if(page==='completed')renderCompleted()
+  updateCount()
 }
 
-function updateCount(){
-  document.getElementById('sf').textContent=P.length+' project'+(P.length!==1?'s':'');
+function updateCount(){document.getElementById('sf').textContent=P.length+' project'+(P.length!==1?'s':'')}
+function fmtDate(d){if(!d)return'—';const t=new Date(d+'T12:00:00');return MO[t.getMonth()]+' '+t.getFullYear()}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+function urgency(p){
+  const ps={High:3,Medium:2,Low:1}[p.priority]||1
+  if(!p.end)return ps
+  const days=(new Date(p.end+'T12:00:00')-TODAY)/86400000
+  return ps*(days<0?10:days<7?5:days<14?3:days<30?2:1)
 }
 
-function fmtDate(d){if(!d)return'—';const dt=new Date(d+'T12:00:00');return MO[dt.getMonth()]+' '+dt.getFullYear();}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function setFilter(type,btn){
+  const val=btn.dataset.v
+  if(type==='s'){
+    F.s=F.s===val&&val!==''?'':val
+    document.querySelectorAll('#sp .fpill').forEach(b=>b.classList.toggle('on',b.dataset.v===F.s))
+  } else {
+    F.p=F.p===val?'':val
+    document.querySelectorAll('#pp .fpill').forEach(b=>b.classList.toggle('on',b.dataset.v===F.p))
+  }
+  renderOverview()
+}
 
-// ── OVERVIEW ──────────────────────────────────────────────────
+function applyFilters(list){
+  const q=(document.getElementById('ov-q')?.value||'').toLowerCase()
+  return list.filter(p=>{
+    if(F.s==='active'&&p.status!=='IN PROGRESS'&&p.status!=='BLOCKED')return false
+    if(F.s==='BLOCKED'&&p.status!=='BLOCKED')return false
+    if(F.s==='BACKLOG'&&p.status!=='BACKLOG')return false
+    if(F.p&&p.priority!==F.p)return false
+    if(q&&!p.name.toLowerCase().includes(q)&&!(p.desc||'').toLowerCase().includes(q))return false
+    return true
+  })
+}
+
 function renderOverview(){
-  const active=P.filter(p=>p.status==='IN PROGRESS'||p.status==='BLOCKED');
-  const backlog=P.filter(p=>p.status==='BACKLOG');
-  const done=P.filter(p=>p.status==='DONE');
-  const totalHrs=P.reduce((a,p)=>a+(p.hours||0),0);
-  const totalTasks=P.reduce((a,p)=>a+(p.tasks?p.tasks.length:0),0);
-  const doneTasks=P.reduce((a,p)=>a+(p.tasks?p.tasks.filter(t=>t.done).length:0),0);
+  const live=P.filter(p=>p.status!=='DONE')
+  const active=live.filter(p=>p.status==='IN PROGRESS'||p.status==='BLOCKED')
+  const done=P.filter(p=>p.status==='DONE')
+  const blocked=P.filter(p=>p.status==='BLOCKED').length
+  const highPri=live.filter(p=>p.priority==='High').length
+  const nextDl=live.filter(p=>p.end).sort((a,b)=>new Date(a.end)-new Date(b.end))[0]
+  const daysNext=nextDl?Math.ceil((new Date(nextDl.end+'T12:00:00')-TODAY)/86400000):null
 
   document.getElementById('stat-row').innerHTML=`
-    <div class="stat highlight">
-      <div class="stat-lbl">Total projects</div>
-      <div class="stat-val">${P.length}</div>
-      <div class="stat-sub">${done.length} completed</div>
-    </div>
-    <div class="stat">
-      <div class="stat-lbl">In progress</div>
-      <div class="stat-val">${active.length}</div>
-      <div class="stat-sub">actively building</div>
-    </div>
-    <div class="stat">
-      <div class="stat-lbl">Backlog</div>
-      <div class="stat-val">${backlog.length}</div>
-      <div class="stat-sub">scoped &amp; ready</div>
-    </div>
-    <div class="stat">
-      <div class="stat-lbl">Hours saved/mo</div>
-      <div class="stat-val">${totalHrs||'—'}</div>
-      <div class="stat-sub">est. across all projects</div>
-    </div>
-    <div class="stat">
-      <div class="stat-lbl">Task completion</div>
-      <div class="stat-val">${totalTasks?Math.round(doneTasks/totalTasks*100)+'%':'—'}</div>
-      <div class="stat-sub">${doneTasks}/${totalTasks} tasks done</div>
-    </div>`;
+    <div class="stat hi"><div class="stat-lbl">Active</div><div class="stat-val">${active.length}</div><div class="stat-sub">${live.filter(p=>p.status==='BACKLOG').length} in backlog</div></div>
+    <div class="stat"><div class="stat-lbl">High priority</div><div class="stat-val">${highPri||'—'}</div><div class="stat-sub">${done.length} completed</div></div>
+    <div class="stat"><div class="stat-lbl">Blocked</div><div class="stat-val">${blocked||'—'}</div><div class="stat-sub">${blocked?'need attention':'all clear'}</div></div>
+    <div class="stat"><div class="stat-lbl">Next deadline</div><div class="stat-val">${daysNext!==null?(daysNext<0?'Overdue':daysNext+'d'):'—'}</div><div class="stat-sub">${nextDl?esc(nextDl.name.slice(0,24)):'no deadline set'}</div></div>`
 
-  document.getElementById('c-active').innerHTML=active.length
-    ?active.map((p,i)=>cardHTML(p,i%2===0?'light':'dark')).join('')
-    :'<div style="font-size:15px;color:var(--mid);grid-column:span 2;padding:8px 0">No active projects.</div>';
+  const sorted=[...live].sort((a,b)=>urgency(b)-urgency(a))
+  const filtered=applyFilters(sorted)
+  document.getElementById('fcount').textContent=filtered.length<live.length?`${filtered.length} shown`:''
 
-  document.getElementById('c-backlog').innerHTML=backlog.length
-    ?backlog.map((p,i)=>cardHTML(p,i%2===0?'dark':'light')).join('')
-    :'<div style="font-size:15px;color:var(--mid);grid-column:span 2;padding:8px 0">Backlog is empty.</div>';
+  if(!filtered.length){
+    document.getElementById('c-cards').innerHTML='<div style="font-size:15px;color:var(--mid);grid-column:span 2;padding:8px 0">No projects match the current filters.</div>'
+    return
+  }
+  document.getElementById('c-cards').innerHTML=filtered.map(p=>cardHTML(p)).join('')
 }
 
-function cardHTML(p,th){
-  const prog=p.progress||0;
-  const tags=(p.tags||[]).map(t=>`<span class="ctag">${esc(t)}</span>`).join('');
-  const schedBadge=p.sessionsScheduled>0?`<span class="sched-badge">📅 ${p.sessionsScheduled} session${p.sessionsScheduled!==1?'s':''}</span>`:'';
-  const tc=p.tasks?p.tasks.length:0;
-  const td=p.tasks?p.tasks.filter(t=>t.done).length:0;
-  const ragDot=p.rag?`<span class="rag-dot rag-${p.rag}"></span>`:'';
-  return `<div class="card ${th}" onclick="openProject('${p.id}')">
-    <div class="c-status">${ragDot}${p.status}${p.priority==='High'?' · HIGH':''}</div>
+function cardHTML(p){
+  const prog=p.progress||0
+  const cls=p.status==='BLOCKED'?'c-blocked':p.priority==='High'?'c-high':''
+  const days=p.end?Math.ceil((new Date(p.end+'T12:00:00')-TODAY)/86400000):null
+  const dlTag=days!==null&&days<=7?`<span class="dl-warn">${days<0?'Overdue':days+'d left'}</span>`:''
+  const sched=p.sessionsScheduled>0?`<span class="sched-badge" onclick="event.stopPropagation();openProject('${p.id}',true)">📅 ${p.sessionsScheduled} session${p.sessionsScheduled!==1?'s':''}</span>`:''
+  const rag=p.rag?`<span class="rag-dot rag-${p.rag}"></span>`:''
+  const tc=p.tasks?p.tasks.length:0,td=p.tasks?p.tasks.filter(t=>t.done).length:0
+  return`<div class="card ${cls}" onclick="openProject('${p.id}')">
+    <div class="c-status">${rag}${p.status}${p.priority==='High'?' · HIGH':''}</div>
     <div class="c-title">${esc(p.name)}</div>
     <div class="c-desc">${esc(p.desc)}</div>
     <div class="c-prog"><div class="c-prog-fill" style="width:${prog}%"></div></div>
     <div class="c-foot">
-      <div>
-        <div class="c-tags">${tags}${schedBadge}</div>
-        <div class="c-meta-foot">${tc>0?td+'/'+tc+' tasks · ':''} ${p.bu}</div>
-      </div>
-      <div style="text-align:right">
-        <div class="c-meta-foot">${p.end?fmtDate(p.end):'No end date'}</div>
-        ${prog>0?`<div class="c-meta-foot">${prog}% complete</div>`:''}
-      </div>
+      <div><div class="c-tags">${dlTag}${sched}</div><div class="c-meta-foot">${tc>0?td+'/'+tc+' tasks · ':''}${p.bu}</div></div>
+      <div style="text-align:right"><div class="c-meta-foot">${p.end?fmtDate(p.end):'No end date'}</div>${prog>0?`<div class="c-meta-foot">${prog}% done</div>`:''}</div>
     </div>
-  </div>`;
+  </div>`
 }
 
-// ── DETAIL ────────────────────────────────────────────────────
-async function openProject(id){
-  CP=P.find(p=>p.id===id);
-  if(!CP) return;
-  history.pushState({projectId:id},'',location.pathname+'#'+id);
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-detail').classList.add('active');
-
-  await loadProjectDetail(id);
-
-  document.getElementById('d-id').textContent=CP.id+' · '+CP.bu+' · Added '+CP.added;
-  document.getElementById('d-title').value=CP.name;
-  document.getElementById('d-desc').value=CP.desc||'';
-  renderBadges(); renderMeta(); renderGhWrap();
-  stab('tasks'); renderTasks(); renderNotes(); renderLinks();
-  document.getElementById('sc-prob').value=CP.problem||'';
-  document.getElementById('sc-scope').value=CP.scope||'';
-  document.getElementById('sc-cons').value=CP.constraints||'';
-  document.getElementById('sc-dod').value=CP.dod||'';
-  document.getElementById('sc-stake').value=CP.stakeholders||'';
-  document.getElementById('code-area').innerText=CP.code||'';
-  document.getElementById('code-lang').value=CP.codeLang||'python';
-  document.getElementById('gh-in').value=CP.github||'';
-  document.getElementById('rag-note').value=CP.ragNote||'';
-  loadScheduledSessions(id);
+async function openProject(id,scrollSched){
+  CP=P.find(p=>p.id===id);if(!CP)return
+  history.pushState({projectId:id},'',location.pathname+'#'+id)
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'))
+  document.getElementById('page-detail').classList.add('active')
+  await loadProjectDetail(id)
+  document.getElementById('d-id').textContent=CP.id+' · '+CP.bu+' · Added '+CP.added
+  document.getElementById('d-title').value=CP.name
+  document.getElementById('d-desc').value=CP.desc||''
+  renderBadges();renderMeta();renderGhWrap()
+  stab('tasks');renderTasks();renderNotes();renderLinks()
+  document.getElementById('sc-prob').value=CP.problem||''
+  document.getElementById('sc-scope').value=CP.scope||''
+  document.getElementById('sc-cons').value=CP.constraints||''
+  document.getElementById('sc-dod').value=CP.dod||''
+  document.getElementById('sc-stake').value=CP.stakeholders||''
+  document.getElementById('gh-in').value=CP.github||''
+  document.getElementById('rag-note').value=CP.ragNote||''
+  loadScheduledSessions(id)
+  if(scrollSched)setTimeout(()=>document.getElementById('sched-panel')?.scrollIntoView({behavior:'smooth',block:'nearest'}),350)
 }
 
 function renderBadges(){
-  if(!CP) return;
-  const ragClass=CP.rag?'b-rag-'+CP.rag:'bs';
-  const ragTxt=CP.rag?{G:'● On track',A:'● At risk',R:'● Blocked / behind'}[CP.rag]:'No RAG';
+  if(!CP)return
+  const rc=CP.rag?'b-rag-'+CP.rag:'bs'
+  const rt=CP.rag?{G:'● On track',A:'● At risk',R:'● Blocked / behind'}[CP.rag]:'No RAG'
   document.getElementById('d-badges').innerHTML=`
     <span class="badge bs" onclick="cycleStatus()">${CP.status}</span>
     <span class="badge bp-${CP.priority}" onclick="cyclePriority()">${CP.priority} priority</span>
-    <span class="badge ${ragClass}">${ragTxt}</span>
+    <span class="badge ${rc}">${rt}</span>
     ${CP.deps?`<span class="badge b-dep">⚠ ${esc(CP.deps)}</span>`:''}
-    <span class="badge" style="background:rgba(255,255,255,0.07);color:var(--mid);cursor:default">${CP.effort}</span>
-    ${CP.hours?`<span class="badge" style="background:#103a10;color:#5cb85c;cursor:default">~${CP.hours} hrs/mo</span>`:''}`;
+    <span class="badge" style="background:rgba(0,0,0,0.05);color:var(--mid);cursor:default">${CP.effort}</span>`
 }
 
 function renderMeta(){
-  if(!CP) return;
+  if(!CP)return
   document.getElementById('d-meta').innerHTML=`
     <div class="meta-row"><span class="mk">Owner</span><input class="mv" value="${esc(CP.owner||'—')}" onblur="sf('owner',this.value)"></div>
-    <div class="meta-row"><span class="mk">Status</span>
-      <select class="mv-sel" onchange="sf('status',this.value);renderBadges()">
-        ${['IN PROGRESS','BACKLOG','BLOCKED','DONE'].map(s=>`<option ${CP.status===s?'selected':''}>${s}</option>`).join('')}
-      </select>
-    </div>
-    <div class="meta-row"><span class="mk">Priority</span>
-      <select class="mv-sel" onchange="sf('priority',this.value);renderBadges()">
-        ${['High','Medium','Low'].map(s=>`<option ${CP.priority===s?'selected':''}>${s}</option>`).join('')}
-      </select>
-    </div>
-    <div class="meta-row"><span class="mk">% done</span>
-      <div class="prog-wrap"><input class="prog-input" type="number" value="${CP.progress||0}" min="0" max="100" onblur="sf('progress',Math.min(100,Math.max(0,parseInt(this.value)||0)))">%</div>
-    </div>
-    <div class="meta-row"><span class="mk">Hours/mo</span><input class="mv" type="number" value="${CP.hours||''}" placeholder="—" onblur="sf('hours',parseInt(this.value)||null)"></div>
-    <div class="meta-row"><span class="mk">Start</span><input class="mv" type="date" value="${CP.start||''}" style="font-family:var(--mono);font-size:13px" onblur="sf('start',this.value||null)"></div>
-    <div class="meta-row"><span class="mk">End</span><input class="mv" type="date" value="${CP.end||''}" style="font-family:var(--mono);font-size:13px" onblur="sf('end',this.value||null)"></div>
-    <div class="meta-row"><span class="mk">BU</span>
-      <select class="mv-sel" onchange="sf('bu',this.value)">
-        ${['Storage','Finance','Sales / Commercial','Customer Ops','People / HR','Tech / Engineering','Marketing','Data / BI','Cross-functional'].map(s=>`<option ${CP.bu===s?'selected':''}>${s}</option>`).join('')}
-      </select>
-    </div>
-    <div class="meta-row"><span class="mk">Deps</span><input class="mv" value="${esc(CP.deps||'')}" placeholder="None" onblur="sf('deps',this.value)" style="font-size:13px"></div>
-    <div class="meta-row"><span class="mk">Session</span>
-      <select class="mv-sel" onchange="sf('sessionMins',parseInt(this.value))">
-        ${[30,45,60,90,120].map(m=>`<option value="${m}" ${(CP.sessionMins||90)===m?'selected':''}>${m} min</option>`).join('')}
-      </select>
-    </div>
-    <div class="meta-row"><span class="mk">Sessions</span><span style="font-family:var(--mono);font-size:14px;color:var(--tl)">${CP.sessionsScheduled||0} booked</span></div>`;
-  renderTaskSummary();
+    <div class="meta-row"><span class="mk">Status</span><select class="mv-sel" onchange="sf('status',this.value);renderBadges()">${['IN PROGRESS','BACKLOG','BLOCKED','DONE'].map(s=>`<option ${CP.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="meta-row"><span class="mk">Priority</span><select class="mv-sel" onchange="sf('priority',this.value);renderBadges()">${['High','Medium','Low'].map(s=>`<option ${CP.priority===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="meta-row"><span class="mk">% done</span><div class="prog-wrap"><input class="prog-input" type="number" value="${CP.progress||0}" min="0" max="100" onblur="sf('progress',Math.min(100,Math.max(0,parseInt(this.value)||0)))">%</div></div>
+    <div class="meta-row"><span class="mk">End date</span><input class="mv" type="date" value="${CP.end||''}" style="font-family:var(--mono);font-size:13px" onblur="sf('end',this.value||null)"></div>
+    <div class="meta-row"><span class="mk">BU</span><select class="mv-sel" onchange="sf('bu',this.value)">${['Storage','Finance','Sales / Commercial','Customer Ops','People / HR','Tech / Engineering','Marketing','Data / BI','Cross-functional'].map(s=>`<option ${CP.bu===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="meta-row"><span class="mk">Sessions</span><span style="font-family:var(--mono);font-size:14px">${CP.sessionsScheduled||0} booked</span></div>`
+  renderTaskSummary()
 }
 
 function renderTaskSummary(){
-  if(!CP) return;
-  const tc=CP.tasks?CP.tasks.length:0;
-  const td=CP.tasks?CP.tasks.filter(t=>t.done).length:0;
-  const pct=tc?Math.round(td/tc*100):0;
-  document.getElementById('task-summary').innerHTML=tc
-    ?`<span style="color:var(--tl)">${td}</span> of <span style="color:var(--tl)">${tc}</span> tasks done (${pct}%)`
-    :'No tasks yet';
-  document.getElementById('task-prog-fill').style.width=(tc?pct:0)+'%';
+  if(!CP)return
+  const tc=CP.tasks?CP.tasks.length:0,td=CP.tasks?CP.tasks.filter(t=>t.done).length:0
+  const pct=tc?Math.round(td/tc*100):0
+  document.getElementById('task-summary').innerHTML=tc?`<span style="color:var(--tl)">${td}</span> of <span style="color:var(--tl)">${tc}</span> done (${pct}%)`:'No tasks yet'
+  document.getElementById('task-prog-fill').style.width=(tc?pct:0)+'%'
 }
 
 function renderGhWrap(){
-  if(!CP) return;
-  const wrap=document.getElementById('d-gh-wrap');
-  if(CP.github){
-    wrap.innerHTML=`<a class="gh-link-box" href="${esc(CP.github)}" target="_blank">
-      <svg class="gh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
-      ${esc(CP.github.replace('https://github.com/','github.com/'))}
-    </a>`;
-  } else { wrap.innerHTML=''; }
+  if(!CP)return
+  const w=document.getElementById('d-gh-wrap')
+  if(CP.github){w.innerHTML=`<a class="gh-link-box" href="${esc(CP.github)}" target="_blank"><svg class="gh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>${esc(CP.github.replace('https://github.com/','github.com/'))}</a>`}
+  else w.innerHTML=''
 }
 
-function backToOverview(){ CP=null; history.pushState({},'',location.pathname); nav('overview'); }
+function backToOverview(){CP=null;history.pushState({},'',location.pathname);nav('overview')}
 
 async function deleteProject(){
-  if(!CP) return;
-  if(!confirm(`Delete "${CP.name}"? This cannot be undone.`)) return;
-  const id=CP.id;
-  P=P.filter(p=>p.id!==id);
-  CP=null; nav('overview'); toast('Project deleted');
-  try {
-    await db.from('projects').delete().eq('id',id);
-  } catch(e){ toast('Error deleting: '+e.message); }
+  if(!CP)return
+  if(!confirm(`Delete "${CP.name}"? This cannot be undone.`))return
+  const id=CP.id;P=P.filter(p=>p.id!==id);CP=null;nav('overview');toast('Project deleted')
+  try{await db.from('projects').delete().eq('id',id)}catch(e){toast('Error: '+e.message)}
 }
 
-// ── SAVE FIELD ────────────────────────────────────────────────
 async function sf(field,val){
-  if(!CP) return;
-  CP[field]=val;
-  if(field==='status'&&val==='DONE') CP.completedDate=new Date().toISOString().slice(0,10);
-  renderBadges(); renderTaskSummary();
-  const dbField=DB_FIELD[field];
-  if(!dbField) return;
-  let dbVal=val;
-  if((field==='start'||field==='end'||field==='completedDate')&&!val) dbVal=null;
-  if(field==='hours'&&!val) dbVal=null;
-  const update={ [dbField]:dbVal };
-  if(field==='status'&&val==='DONE') update['completed_date']=CP.completedDate;
-  try {
-    const { error }=await db.from('projects').update(update).eq('id',CP.id);
-    if(error) throw error;
-  } catch(e){ toast('Save error: '+e.message); }
+  if(!CP)return
+  CP[field]=val
+  if(field==='status'&&val==='DONE')CP.completedDate=new Date().toISOString().slice(0,10)
+  renderBadges();renderTaskSummary()
+  const dbf=DBF[field];if(!dbf)return
+  let dbv=val
+  if((field==='start'||field==='end'||field==='completedDate')&&!val)dbv=null
+  if(field==='hours'&&!val)dbv=null
+  const upd={[dbf]:dbv}
+  if(field==='status'&&val==='DONE')upd['completed_date']=CP.completedDate
+  try{const{error}=await db.from('projects').update(upd).eq('id',CP.id);if(error)throw error}
+  catch(e){toast('Save error: '+e.message)}
 }
 
 async function cycleStatus(){
-  if(!CP) return;
-  const s=['BACKLOG','IN PROGRESS','BLOCKED','DONE'];
-  CP.status=s[(s.indexOf(CP.status)+1)%s.length];
-  if(CP.status==='DONE') CP.completedDate=new Date().toISOString().slice(0,10);
-  renderBadges(); renderMeta(); toast('Status → '+CP.status);
-  try {
-    const u={ status:CP.status };
-    if(CP.status==='DONE') u.completed_date=CP.completedDate;
-    await db.from('projects').update(u).eq('id',CP.id);
-  } catch(e){ toast('Error: '+e.message); }
+  if(!CP)return
+  const s=['BACKLOG','IN PROGRESS','BLOCKED','DONE']
+  CP.status=s[(s.indexOf(CP.status)+1)%s.length]
+  if(CP.status==='DONE')CP.completedDate=new Date().toISOString().slice(0,10)
+  renderBadges();renderMeta();toast('Status → '+CP.status)
+  try{const u={status:CP.status};if(CP.status==='DONE')u.completed_date=CP.completedDate;await db.from('projects').update(u).eq('id',CP.id)}
+  catch(e){toast('Error: '+e.message)}
 }
 
 async function cyclePriority(){
-  if(!CP) return;
-  const s=['High','Medium','Low'];
-  CP.priority=s[(s.indexOf(CP.priority)+1)%s.length];
-  renderBadges(); toast('Priority → '+CP.priority);
-  try { await db.from('projects').update({ priority:CP.priority }).eq('id',CP.id); }
-  catch(e){ toast('Error: '+e.message); }
+  if(!CP)return
+  const s=['High','Medium','Low']
+  CP.priority=s[(s.indexOf(CP.priority)+1)%s.length]
+  renderBadges();toast('Priority → '+CP.priority)
+  try{await db.from('projects').update({priority:CP.priority}).eq('id',CP.id)}catch(e){toast('Error: '+e.message)}
 }
 
 async function setRag(r){
-  if(!CP) return;
-  CP.rag=CP.rag===r?'':r;
-  renderBadges(); toast('RAG → '+(CP.rag||'cleared'));
-  try { await db.from('projects').update({ rag:CP.rag||null }).eq('id',CP.id); }
-  catch(e){ toast('Error: '+e.message); }
+  if(!CP)return
+  CP.rag=CP.rag===r?'':r
+  renderBadges();toast('RAG → '+(CP.rag||'cleared'))
+  try{await db.from('projects').update({rag:CP.rag||null}).eq('id',CP.id)}catch(e){toast('Error: '+e.message)}
 }
 
 async function saveGithub(){
-  if(!CP) return;
-  CP.github=document.getElementById('gh-in').value.trim();
-  renderGhWrap(); toast('GitHub saved');
-  try { await db.from('projects').update({ github_url:CP.github||null }).eq('id',CP.id); }
-  catch(e){ toast('Error: '+e.message); }
+  if(!CP)return
+  CP.github=document.getElementById('gh-in').value.trim()
+  renderGhWrap();toast('GitHub saved')
+  try{await db.from('projects').update({github_url:CP.github||null}).eq('id',CP.id)}catch(e){toast('Error: '+e.message)}
 }
 
-// ── TABS ──────────────────────────────────────────────────────
 function stab(name){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.tp').forEach(t=>t.classList.remove('active'));
-  document.querySelector(`.tab[onclick="stab('${name}')"]`)?.classList.add('active');
-  document.getElementById('tp-'+name)?.classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'))
+  document.querySelectorAll('.tp').forEach(t=>t.classList.remove('active'))
+  document.querySelector(`.tab[onclick="stab('${name}')"]`)?.classList.add('active')
+  document.getElementById('tp-'+name)?.classList.add('active')
 }
 
-// ── TASKS ─────────────────────────────────────────────────────
 async function addTask(){
-  if(!CP) return;
-  const txt=document.getElementById('ta-txt').value.trim();
-  if(!txt) return;
-  const taskId='T'+Date.now();
-  const priority=document.getElementById('ta-pri').value;
-  const due=document.getElementById('ta-due').value||'';
-  const sortOrder=CP.tasks.length;
-  CP.tasks.push({ id:taskId, text:txt, done:false, priority, due, subtasks:[], showSubs:false });
-  document.getElementById('ta-txt').value='';
-  document.getElementById('ta-due').value='';
-  renderTasks(); renderTaskSummary(); toast('Task added');
-  try {
-    const { error }=await db.from('tasks').insert({
-      id:taskId, project_id:CP.id, text:txt, done:false,
-      priority, due_date:due||null, sort_order:sortOrder
-    });
-    if(error) throw error;
-  } catch(e){ toast('Error saving task: '+e.message); }
+  if(!CP)return
+  const txt=document.getElementById('ta-txt').value.trim();if(!txt)return
+  const tid='T'+Date.now(),pri=document.getElementById('ta-pri').value,due=document.getElementById('ta-due').value||''
+  CP.tasks.push({id:tid,text:txt,done:false,priority:pri,due,subtasks:[],showSubs:false})
+  document.getElementById('ta-txt').value='';document.getElementById('ta-due').value=''
+  renderTasks();renderTaskSummary();toast('Task added')
+  try{const{error}=await db.from('tasks').insert({id:tid,project_id:CP.id,text:txt,done:false,priority:pri,due_date:due||null,sort_order:CP.tasks.length-1});if(error)throw error}
+  catch(e){toast('Error: '+e.message)}
 }
 
 function renderTasks(){
-  if(!CP) return;
-  const el=document.getElementById('tlist');
-  if(!CP.tasks.length){ el.innerHTML=`<div style="font-size:14px;color:var(--mid);padding:14px 0;text-align:center">No tasks yet — add one above</div>`; return; }
-  el.innerHTML=CP.tasks.map((t,i)=>taskHTML(t,i)).join('');
+  if(!CP)return
+  const el=document.getElementById('tlist')
+  if(!CP.tasks.length){el.innerHTML='<div style="font-size:14px;color:var(--mid);padding:14px 0;text-align:center">No tasks yet — add one above</div>';return}
+  el.innerHTML=CP.tasks.map((t,i)=>taskHTML(t,i)).join('')
   el.querySelectorAll('.t-item[draggable]').forEach(row=>{
-    row.addEventListener('dragstart',e=>{ dragSrc=+row.dataset.i; e.dataTransfer.effectAllowed='move'; });
-    row.addEventListener('dragover',e=>{ e.preventDefault(); row.classList.add('drag-over'); });
-    row.addEventListener('dragleave',()=>row.classList.remove('drag-over'));
+    row.addEventListener('dragstart',e=>{dragSrc=+row.dataset.i;e.dataTransfer.effectAllowed='move'})
+    row.addEventListener('dragover',e=>{e.preventDefault();row.classList.add('drag-over')})
+    row.addEventListener('dragleave',()=>row.classList.remove('drag-over'))
     row.addEventListener('drop',async e=>{
-      e.preventDefault(); row.classList.remove('drag-over');
-      const dest=+row.dataset.i;
-      if(dragSrc===dest||dragSrc===null) return;
-      const [m]=CP.tasks.splice(dragSrc,1);
-      CP.tasks.splice(dest,0,m);
-      renderTasks();
-      await saveSortOrders();
-    });
-  });
+      e.preventDefault();row.classList.remove('drag-over')
+      const dest=+row.dataset.i;if(dragSrc===dest||dragSrc===null)return
+      const[m]=CP.tasks.splice(dragSrc,1);CP.tasks.splice(dest,0,m);renderTasks();await saveSortOrders()
+    })
+  })
 }
 
 function taskHTML(t,i){
-  const ov=t.due&&!t.done&&new Date(t.due+'T12:00:00')<TODAY;
-  const pClass={ High:'tH', Medium:'tM', Low:'tL' }[t.priority]||'tM';
-  const subs=(t.subtasks||[]);
-  const subHTML=subs.map((s,si)=>`
-    <div class="sub-item ${s.done?'done':''}">
-      <div class="chk ${s.done?'on':''}" onclick="toggleSub(${i},${si})"></div>
-      <input class="sub-text" value="${esc(s.text)}" onblur="editSub(${i},${si},this.value)">
-      <button class="sub-del" onclick="delSub(${i},${si})">×</button>
-    </div>`).join('');
-  return `<div class="t-item ${t.done?'done':''}" draggable="true" data-i="${i}">
+  const ov=t.due&&!t.done&&new Date(t.due+'T12:00:00')<TODAY
+  const pc={High:'tH',Medium:'tM',Low:'tL'}[t.priority]||'tM'
+  const subs=t.subtasks||[]
+  const subHTML=subs.map((s,si)=>`<div class="sub-item ${s.done?'done':''}"><div class="chk ${s.done?'on':''}" onclick="toggleSub(${i},${si})"></div><input class="sub-text" value="${esc(s.text)}" onblur="editSub(${i},${si},this.value)"><button class="sub-del" onclick="delSub(${i},${si})">×</button></div>`).join('')
+  return`<div class="t-item ${t.done?'done':''}" draggable="true" data-i="${i}">
     <div class="t-row">
       <div class="chk ${t.done?'on':''}" onclick="toggleTask(${i})"></div>
       <input class="t-text" value="${esc(t.text)}" onblur="editTask(${i},this.value)">
       <div class="t-meta">
-        <span class="tp-badge ${pClass}">${t.priority}</span>
+        <span class="tp-badge ${pc}">${t.priority}</span>
         ${t.due?`<span class="t-due${ov?' ov':''}">${t.due}</span>`:''}
         <div class="t-actions">
-          <button class="ta-btn" onclick="moveTask(${i},-1)" title="Move up">↑</button>
-          <button class="ta-btn" onclick="moveTask(${i},1)" title="Move down">↓</button>
-          <button class="ta-btn" onclick="toggleSubList(${i})" title="Subtasks">⊕</button>
-          <button class="ta-btn" onclick="changePri(${i})" title="Change priority">⟳</button>
-          <button class="ta-btn del" onclick="delTask(${i})" title="Delete">×</button>
+          <button class="ta-btn" onclick="moveTask(${i},-1)">↑</button>
+          <button class="ta-btn" onclick="moveTask(${i},1)">↓</button>
+          <button class="ta-btn" onclick="toggleSubList(${i})">⊕</button>
+          <button class="ta-btn" onclick="changePri(${i})">⟳</button>
+          <button class="ta-btn del" onclick="delTask(${i})">×</button>
         </div>
       </div>
     </div>
-    ${(t.showSubs||subs.length)?`
-      <div class="sub-list">${subHTML}</div>
-      <div class="sub-add-row">
-        <input class="sub-add-in" placeholder="Add subtask…" onkeydown="if(event.key==='Enter'&&this.value.trim()){addSub(${i},this.value.trim());this.value=''}">
-      </div>`:''}
-  </div>`;
+    ${(t.showSubs||subs.length)?`<div class="sub-list">${subHTML}</div><div class="sub-add-row"><input class="sub-add-in" placeholder="Add subtask…" onkeydown="if(event.key==='Enter'&&this.value.trim()){addSub(${i},this.value.trim());this.value=''}"></div>`:''}</div>`
 }
 
 async function toggleTask(i){
-  if(!CP) return;
-  CP.tasks[i].done=!CP.tasks[i].done;
-  renderTasks(); renderTaskSummary();
-  try { await db.from('tasks').update({ done:CP.tasks[i].done }).eq('id',CP.tasks[i].id); }
-  catch(e){ toast('Error: '+e.message); }
+  if(!CP)return;CP.tasks[i].done=!CP.tasks[i].done;renderTasks();renderTaskSummary()
+  try{await db.from('tasks').update({done:CP.tasks[i].done}).eq('id',CP.tasks[i].id)}catch(e){toast('Error: '+e.message)}
 }
-
-async function editTask(i,v){
-  if(!CP) return;
-  CP.tasks[i].text=v;
-  try { await db.from('tasks').update({ text:v }).eq('id',CP.tasks[i].id); }
-  catch(e){ toast('Error: '+e.message); }
-}
-
+async function editTask(i,v){if(!CP)return;CP.tasks[i].text=v;try{await db.from('tasks').update({text:v}).eq('id',CP.tasks[i].id)}catch(e){toast('Error: '+e.message)}}
 async function delTask(i){
-  if(!CP) return;
-  if(!confirm('Delete task?')) return;
-  const taskId=CP.tasks[i].id;
-  CP.tasks.splice(i,1);
-  renderTasks(); renderTaskSummary(); toast('Task deleted');
-  try { await db.from('tasks').delete().eq('id',taskId); }
-  catch(e){ toast('Error: '+e.message); }
+  if(!CP)return;if(!confirm('Delete task?'))return
+  const tid=CP.tasks[i].id;CP.tasks.splice(i,1);renderTasks();renderTaskSummary();toast('Task deleted')
+  try{await db.from('tasks').delete().eq('id',tid)}catch(e){toast('Error: '+e.message)}
 }
-
 async function moveTask(i,d){
-  if(!CP) return;
-  const j=i+d;
-  if(j<0||j>=CP.tasks.length) return;
-  const a=CP.tasks[i], b=CP.tasks[j];
-  [CP.tasks[i],CP.tasks[j]]=[b,a];
-  renderTasks();
-  try {
-    await Promise.all([
-      db.from('tasks').update({ sort_order:i }).eq('id',b.id),
-      db.from('tasks').update({ sort_order:j }).eq('id',a.id),
-    ]);
-  } catch(e){ toast('Error: '+e.message); }
+  if(!CP)return;const j=i+d;if(j<0||j>=CP.tasks.length)return
+  const[a,b]=[CP.tasks[i],CP.tasks[j]];[CP.tasks[i],CP.tasks[j]]=[b,a];renderTasks()
+  try{await Promise.all([db.from('tasks').update({sort_order:i}).eq('id',b.id),db.from('tasks').update({sort_order:j}).eq('id',a.id)])}catch(e){toast('Error: '+e.message)}
 }
-
-function toggleSubList(i){ if(!CP) return; CP.tasks[i].showSubs=!CP.tasks[i].showSubs; renderTasks(); }
-
+function toggleSubList(i){if(!CP)return;CP.tasks[i].showSubs=!CP.tasks[i].showSubs;renderTasks()}
 async function addSub(i,txt){
-  if(!CP||!txt) return;
-  const subId='S'+Date.now();
-  const sortOrder=CP.tasks[i].subtasks.length;
-  CP.tasks[i].subtasks.push({ id:subId, text:txt, done:false });
-  CP.tasks[i].showSubs=true;
-  renderTasks();
-  try {
-    await db.from('subtasks').insert({ id:subId, task_id:CP.tasks[i].id, text:txt, done:false, sort_order:sortOrder });
-  } catch(e){ toast('Error: '+e.message); }
+  if(!CP||!txt)return;const sid='S'+Date.now()
+  CP.tasks[i].subtasks.push({id:sid,text:txt,done:false});CP.tasks[i].showSubs=true;renderTasks()
+  try{await db.from('subtasks').insert({id:sid,task_id:CP.tasks[i].id,text:txt,done:false,sort_order:CP.tasks[i].subtasks.length-1})}catch(e){toast('Error: '+e.message)}
 }
-
 async function toggleSub(i,si){
-  if(!CP) return;
-  CP.tasks[i].subtasks[si].done=!CP.tasks[i].subtasks[si].done;
-  renderTasks(); renderTaskSummary();
-  try { await db.from('subtasks').update({ done:CP.tasks[i].subtasks[si].done }).eq('id',CP.tasks[i].subtasks[si].id); }
-  catch(e){ toast('Error: '+e.message); }
+  if(!CP)return;CP.tasks[i].subtasks[si].done=!CP.tasks[i].subtasks[si].done;renderTasks();renderTaskSummary()
+  try{await db.from('subtasks').update({done:CP.tasks[i].subtasks[si].done}).eq('id',CP.tasks[i].subtasks[si].id)}catch(e){toast('Error: '+e.message)}
 }
-
-async function editSub(i,si,v){
-  if(!CP) return;
-  CP.tasks[i].subtasks[si].text=v;
-  try { await db.from('subtasks').update({ text:v }).eq('id',CP.tasks[i].subtasks[si].id); }
-  catch(e){ toast('Error: '+e.message); }
-}
-
+async function editSub(i,si,v){if(!CP)return;CP.tasks[i].subtasks[si].text=v;try{await db.from('subtasks').update({text:v}).eq('id',CP.tasks[i].subtasks[si].id)}catch(e){toast('Error: '+e.message)}}
 async function delSub(i,si){
-  if(!CP) return;
-  const subId=CP.tasks[i].subtasks[si].id;
-  CP.tasks[i].subtasks.splice(si,1);
-  renderTasks();
-  try { await db.from('subtasks').delete().eq('id',subId); }
-  catch(e){ toast('Error: '+e.message); }
+  if(!CP)return;const sid=CP.tasks[i].subtasks[si].id;CP.tasks[i].subtasks.splice(si,1);renderTasks()
+  try{await db.from('subtasks').delete().eq('id',sid)}catch(e){toast('Error: '+e.message)}
 }
-
 async function changePri(i){
-  if(!CP) return;
-  const s=['High','Medium','Low'];
-  CP.tasks[i].priority=s[(s.indexOf(CP.tasks[i].priority)+1)%s.length];
-  renderTasks();
-  try { await db.from('tasks').update({ priority:CP.tasks[i].priority }).eq('id',CP.tasks[i].id); }
-  catch(e){ toast('Error: '+e.message); }
+  if(!CP)return;const s=['High','Medium','Low'];CP.tasks[i].priority=s[(s.indexOf(CP.tasks[i].priority)+1)%s.length];renderTasks()
+  try{await db.from('tasks').update({priority:CP.tasks[i].priority}).eq('id',CP.tasks[i].id)}catch(e){toast('Error: '+e.message)}
 }
-
 async function saveSortOrders(){
-  if(!CP) return;
-  try {
-    await Promise.all(CP.tasks.map((t,i)=>db.from('tasks').update({ sort_order:i }).eq('id',t.id)));
-  } catch(e){ toast('Error saving order: '+e.message); }
+  if(!CP)return
+  try{await Promise.all(CP.tasks.map((t,i)=>db.from('tasks').update({sort_order:i}).eq('id',t.id)))}catch(e){toast('Error: '+e.message)}
 }
 
-// ── NOTES ─────────────────────────────────────────────────────
 async function addNote(){
-  if(!CP) return;
-  const txt=document.getElementById('note-in').value.trim();
-  if(!txt) return;
-  const noteId='N'+Date.now();
-  const today=new Date().toISOString().slice(0,10);
-  const author='Scott R.';
-  CP.notes.unshift({ id:noteId, text:txt, date:today, author });
-  document.getElementById('note-in').value='';
-  renderNotes(); toast('Note added');
-  try {
-    await db.from('notes').insert({ id:noteId, project_id:CP.id, text:txt, author });
-  } catch(e){ toast('Error: '+e.message); }
+  if(!CP)return;const txt=document.getElementById('note-in').value.trim();if(!txt)return
+  const nid='N'+Date.now(),today=new Date().toISOString().slice(0,10),author='Scott R.'
+  CP.notes.unshift({id:nid,text:txt,date:today,author});document.getElementById('note-in').value=''
+  renderNotes();toast('Note added')
+  try{await db.from('notes').insert({id:nid,project_id:CP.id,text:txt,author})}catch(e){toast('Error: '+e.message)}
 }
-
 function renderNotes(){
-  if(!CP) return;
-  document.getElementById('note-list').innerHTML=(CP.notes||[]).map((n,i)=>`
-    <div class="note">
-      <div class="note-hdr"><span class="note-who">${esc(n.author)}</span><span class="note-when">${n.date}</span></div>
-      <div class="note-body">${esc(n.text)}</div>
-      <button class="note-del" onclick="delNote(${i})">×</button>
-    </div>`).join('');
+  if(!CP)return
+  document.getElementById('note-list').innerHTML=(CP.notes||[]).map((n,i)=>`<div class="note"><div class="note-hdr"><span class="note-who">${esc(n.author)}</span><span class="note-when">${n.date}</span></div><div class="note-body">${esc(n.text)}</div><button class="note-del" onclick="delNote(${i})">×</button></div>`).join('')
 }
-
 async function delNote(i){
-  if(!CP) return;
-  const noteId=CP.notes[i].id;
-  CP.notes.splice(i,1);
-  renderNotes(); toast('Note deleted');
-  try { await db.from('notes').delete().eq('id',noteId); }
-  catch(e){ toast('Error: '+e.message); }
+  if(!CP)return;const nid=CP.notes[i].id;CP.notes.splice(i,1);renderNotes();toast('Note deleted')
+  try{await db.from('notes').delete().eq('id',nid)}catch(e){toast('Error: '+e.message)}
 }
 
-// ── LINKS ─────────────────────────────────────────────────────
 async function addLink(){
-  if(!CP) return;
-  const label=document.getElementById('lnk-lbl').value.trim();
-  const url=document.getElementById('lnk-url').value.trim();
-  if(!url) return;
-  const linkId='L'+Date.now();
-  CP.links.push({ id:linkId, label:label||url, url });
-  document.getElementById('lnk-lbl').value='';
-  document.getElementById('lnk-url').value='';
-  renderLinks(); toast('Link added');
-  try {
-    await db.from('links').insert({ id:linkId, project_id:CP.id, label:label||url, url });
-  } catch(e){ toast('Error: '+e.message); }
+  if(!CP)return;const label=document.getElementById('lnk-lbl').value.trim(),url=document.getElementById('lnk-url').value.trim();if(!url)return
+  const lid='L'+Date.now();CP.links.push({id:lid,label:label||url,url})
+  document.getElementById('lnk-lbl').value='';document.getElementById('lnk-url').value='';renderLinks();toast('Link added')
+  try{await db.from('links').insert({id:lid,project_id:CP.id,label:label||url,url})}catch(e){toast('Error: '+e.message)}
 }
-
 function renderLinks(){
-  if(!CP) return;
-  document.getElementById('links-list').innerHTML=(CP.links||[]).map((l,i)=>`
-    <div class="link-row">
-      <a class="link-anchor" href="${esc(l.url)}" target="_blank">${esc(l.label)}</a>
-      <button class="btn-danger" onclick="delLink(${i})">Remove</button>
-    </div>`).join('');
+  if(!CP)return
+  document.getElementById('links-list').innerHTML=(CP.links||[]).map((l,i)=>`<div class="link-row"><a class="link-anchor" href="${esc(l.url)}" target="_blank">${esc(l.label)}</a><button class="btn-danger" onclick="delLink(${i})">Remove</button></div>`).join('')
 }
-
 async function delLink(i){
-  if(!CP) return;
-  const linkId=CP.links[i].id;
-  CP.links.splice(i,1);
-  renderLinks();
-  try { await db.from('links').delete().eq('id',linkId); }
-  catch(e){ toast('Error: '+e.message); }
+  if(!CP)return;const lid=CP.links[i].id;CP.links.splice(i,1);renderLinks()
+  try{await db.from('links').delete().eq('id',lid)}catch(e){toast('Error: '+e.message)}
 }
 
-// ── LOG PROJECT ───────────────────────────────────────────────
 async function submitProject(){
-  const name=document.getElementById('f-name').value.trim();
-  const desc=document.getElementById('f-desc').value.trim();
-  const hrs=document.getElementById('f-hours').value.trim();
-  const prog=document.getElementById('f-prog').value.trim();
-  if(!name){ toast('Project name is required'); return; }
-  if(!desc){ toast('Description is required'); return; }
-  if(hrs===''){ toast('Hours saved is required (enter 0 if unknown)'); return; }
-  if(prog===''){ toast('% complete is required'); return; }
-
-  const tags=document.getElementById('f-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
-  const today=new Date().toISOString().slice(0,10);
-  const newId='P'+String(P.length+1).padStart(3,'0');
-  const status=document.getElementById('f-status').value;
-
+  const name=document.getElementById('f-name').value.trim()
+  const desc=document.getElementById('f-desc').value.trim()
+  if(!name){toast('Project name is required');return}
+  if(!desc){toast('Description is required');return}
+  const maxN=P.reduce((m,p)=>Math.max(m,parseInt(p.id.slice(1))||0),0)
+  const newId='P'+String(maxN+1).padStart(3,'0')
+  const today=new Date().toISOString().slice(0,10)
+  const status=document.getElementById('f-status').value
   const row={
-    id:newId, name, description:desc, status,
+    id:newId,name,description:desc,status,
     bu:document.getElementById('f-bu').value,
     owner:document.getElementById('f-owner').value||'—',
     priority:document.getElementById('f-priority').value,
-    impact:document.getElementById('f-impact').value,
-    hours_saved:parseInt(hrs)||0,
     effort:document.getElementById('f-effort').value,
-    progress:Math.min(100,Math.max(0,parseInt(prog)||0)),
-    start_date:document.getElementById('f-start').value||today,
     end_date:document.getElementById('f-end').value||null,
-    dependencies:document.getElementById('f-deps').value.trim(),
-    tags:tags.length?tags:['General'],
-    added_date:today,
-    github_url:document.getElementById('f-github').value.trim()||null,
-    problem:document.getElementById('f-problem').value.trim(),
-    dod:document.getElementById('f-dod').value.trim(),
+    start_date:today,hours_saved:0,progress:0,impact:'',
+    dependencies:'',tags:['General'],added_date:today,
+    github_url:null,problem:'',dod:'',
     completed_date:status==='DONE'?today:null,
-    session_length_mins:parseInt(document.getElementById('f-session').value)||90,
-    sessions_scheduled:0,
-  };
-
-  P.unshift(toLocal(row));
-  ['f-name','f-desc','f-owner','f-hours','f-prog','f-start','f-end','f-deps','f-github','f-tags','f-problem','f-dod'].forEach(id=>document.getElementById(id).value='');
-  toast('Logged — '+newId);
-  setTimeout(()=>nav('overview'),900);
-
-  try {
-    const { error }=await db.from('projects').insert(row);
-    if(error) throw error;
-  } catch(e){
-    toast('Error saving: '+e.message);
-    P=P.filter(x=>x.id!==newId);
+    session_length_mins:90,sessions_scheduled:0,
   }
+  P.unshift(toLocal(row))
+  ;['f-name','f-desc','f-owner','f-end'].forEach(id=>document.getElementById(id).value='')
+  toast('Logged — '+newId);setTimeout(()=>nav('overview'),900)
+  try{const{error}=await db.from('projects').insert(row);if(error)throw error}
+  catch(e){toast('Error saving: '+e.message);P=P.filter(x=>x.id!==newId)}
 }
 
-// ── GANTT ─────────────────────────────────────────────────────
-function renderGantt(){
-  const gP=P.filter(p=>p.status!=='DONE');
-  if(!gP.length){
-    document.getElementById('g-hdr').innerHTML='';
-    document.getElementById('g-rows').innerHTML='<div style="font-size:15px;color:var(--mid);padding:16px 0">No active projects to display.</div>';
-    return;
-  }
-  const starts=gP.map(p=>p.start?new Date(p.start+'T12:00:00'):null).filter(Boolean);
-  const ends=gP.map(p=>p.end?new Date(p.end+'T12:00:00'):null).filter(Boolean);
-  if(!starts.length){ document.getElementById('g-rows').innerHTML='<div style="font-size:15px;color:var(--mid);padding:16px 0">Add start/end dates to see Gantt.</div>'; return; }
-  const minD=new Date(Math.min(...starts));minD.setDate(1);
-  const maxD=new Date(Math.max(...ends.length?ends:starts));maxD.setMonth(maxD.getMonth()+1,1);
-  const totMs=maxD-minD;
-  const months=[];let d=new Date(minD);
-  while(d<maxD){months.push(MO[d.getMonth()]+' '+String(d.getFullYear()).slice(2));d.setMonth(d.getMonth()+1);}
-  document.getElementById('g-hdr').innerHTML=months.map(m=>`<div class="gmo">${m}</div>`).join('');
-  const tp=Math.max(0,Math.min(100,(TODAY-minD)/totMs*100));
-  document.getElementById('g-rows').innerHTML=gP.map(p=>{
-    if(!p.start) return '';
-    const s=new Date(p.start+'T12:00:00'), e=new Date((p.end||p.start)+'T12:00:00');
-    const left=Math.max(0,(s-minD)/totMs*100);
-    const width=Math.max(2,(e-s)/totMs*100);
-    const cls=p.deps?'dep':'';
-    const td=p.tasks?p.tasks.filter(t=>t.done).length:0;
-    const tc=p.tasks?p.tasks.length:0;
-    return `<div class="g-row">
-      <div class="g-lbl" onclick="openProject('${p.id}')" title="${esc(p.name)}">
-        ${esc(p.name)}
-        <div class="g-lbl-sub">${p.id} · ${p.status}${tc?' · '+td+'/'+tc:''}</div>
-      </div>
-      <div class="g-track" onclick="openProject('${p.id}')">
-        <div class="g-today" style="left:${tp}%"></div>
-        <div class="g-bar ${cls}" style="left:${left}%;width:${width}%">${width>10?fmtDate(p.start):''}</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// ── COMPLETED ─────────────────────────────────────────────────
 function renderCompleted(){
-  const done=P.filter(p=>p.status==='DONE');
-  if(!done.length){
-    document.getElementById('comp-empty').style.display='block';
-    document.getElementById('comp-table').style.display='none';
-    return;
-  }
-  document.getElementById('comp-empty').style.display='none';
-  document.getElementById('comp-table').style.display='table';
-  document.getElementById('comp-body').innerHTML=done.map(p=>`
-    <tr style="cursor:pointer" onclick="openProject('${p.id}')">
-      <td><strong style="font-size:15px">${esc(p.name)}</strong><br><span style="font-size:13px;color:var(--mid)">${esc(p.desc||'')}</span></td>
-      <td class="mono">${esc(p.bu)}</td>
-      <td class="mono">${esc(p.owner)}</td>
-      <td class="mono">${p.completedDate||'—'}</td>
-      <td class="mono">${p.hours?p.hours+' hrs/mo':'—'}</td>
-      <td><button class="btn-sm" onclick="event.stopPropagation();reopenProject('${p.id}')">Reopen</button></td>
-    </tr>`).join('');
+  const done=P.filter(p=>p.status==='DONE')
+  if(!done.length){document.getElementById('comp-empty').style.display='block';document.getElementById('comp-table').style.display='none';return}
+  document.getElementById('comp-empty').style.display='none';document.getElementById('comp-table').style.display='table'
+  document.getElementById('comp-body').innerHTML=done.map(p=>`<tr style="cursor:pointer" onclick="openProject('${p.id}')"><td><strong style="font-size:15px">${esc(p.name)}</strong><br><span style="font-size:13px;color:var(--mid)">${esc(p.desc||'')}</span></td><td class="mono">${esc(p.bu)}</td><td class="mono">${esc(p.owner)}</td><td class="mono">${p.completedDate||'—'}</td><td><button class="btn-sm" onclick="event.stopPropagation();reopenProject('${p.id}')">Reopen</button></td></tr>`).join('')
 }
-
 async function reopenProject(id){
-  const p=P.find(x=>x.id===id);
-  if(!p) return;
-  p.status='BACKLOG'; p.completedDate='';
-  renderCompleted(); toast(p.id+' reopened → Backlog');
-  try { await db.from('projects').update({ status:'BACKLOG', completed_date:null }).eq('id',id); }
-  catch(e){ toast('Error: '+e.message); }
+  const p=P.find(x=>x.id===id);if(!p)return;p.status='BACKLOG';p.completedDate='';renderCompleted();toast(id+' reopened → Backlog')
+  try{await db.from('projects').update({status:'BACKLOG',completed_date:null}).eq('id',id)}catch(e){toast('Error: '+e.message)}
 }
 
-// ── REPORTING ─────────────────────────────────────────────────
-function renderReporting(){
-  const done=P.filter(p=>p.status==='DONE').length;
-  const ip=P.filter(p=>p.status==='IN PROGRESS'||p.status==='BLOCKED').length;
-  const bl=P.filter(p=>p.status==='BACKLOG').length;
-  const totalHrs=P.reduce((a,p)=>a+(p.hours||0),0);
-  const compPct=P.length?Math.round(done/P.length*100):0;
-
-  document.getElementById('r-total').textContent=P.length;
-  document.getElementById('r-hrs').textContent=(totalHrs||0)+' hrs';
-  document.getElementById('r-done').textContent=done;
-  document.getElementById('r-ip').textContent=ip;
-  document.getElementById('r-bl').textContent=bl;
-  document.getElementById('r-comp-pct').textContent=compPct+'%';
-  document.getElementById('r-comp-bar').style.width=compPct+'%';
-  document.getElementById('r-comp-sub').textContent=done+' of '+P.length+' projects completed';
-
-  const impMap={};P.forEach(p=>(p.tags||[]).forEach(t=>{impMap[t]=(impMap[t]||0)+1;}));
-  const impMax=Math.max(...Object.values(impMap),1);
-  document.getElementById('r-impact').innerHTML=Object.entries(impMap).sort((a,b)=>b[1]-a[1]).map(([k,v])=>barRow(k,v,impMax)).join('');
-
-  const stMap={};P.forEach(p=>{stMap[p.status]=(stMap[p.status]||0)+1;});
-  document.getElementById('r-status').innerHTML=Object.entries(stMap).sort((a,b)=>b[1]-a[1]).map(([k,v])=>barRow(k,v,P.length)).join('');
-
-  const deps=P.filter(p=>p.deps);
-  document.getElementById('r-deps').innerHTML=deps.length
-    ?deps.map(p=>`<div style="margin-bottom:10px"><div style="font-size:14px;font-weight:500;color:var(--tl);margin-bottom:2px;cursor:pointer" onclick="openProject('${p.id}')">${esc(p.name)}</div><div style="font-family:var(--mono);font-size:12px;color:var(--mid)">${esc(p.deps)}</div></div>`).join('')
-    :'<div style="font-size:14px;color:var(--mid)">No blockers logged</div>';
-
-  const ragMap={G:0,A:0,R:0,none:0};
-  P.forEach(p=>{ if(p.rag) ragMap[p.rag]++; else ragMap.none++; });
-  const rTotal=P.length||1;
-  document.getElementById('r-rag').innerHTML=`
-    <div class="r-bar-row"><div class="r-bar-lbl"><span class="rag-dot rag-G"></span> On track</div><div class="r-bar-t"><div class="r-bar-f" style="width:${ragMap.G/rTotal*100}%"></div></div><div class="r-bar-v">${ragMap.G}</div></div>
-    <div class="r-bar-row"><div class="r-bar-lbl"><span class="rag-dot rag-A"></span> At risk</div><div class="r-bar-t"><div class="r-bar-f" style="width:${ragMap.A/rTotal*100}%"></div></div><div class="r-bar-v">${ragMap.A}</div></div>
-    <div class="r-bar-row"><div class="r-bar-lbl"><span class="rag-dot rag-R"></span> Blocked</div><div class="r-bar-t"><div class="r-bar-f" style="width:${ragMap.R/rTotal*100}%"></div></div><div class="r-bar-v">${ragMap.R}</div></div>
-    <div class="r-bar-row"><div class="r-bar-lbl" style="color:var(--mid)">No RAG set</div><div class="r-bar-t"><div class="r-bar-f" style="width:${ragMap.none/rTotal*100}%"></div></div><div class="r-bar-v">${ragMap.none}</div></div>`;
+async function loadScheduledSessions(pid){
+  try{
+    const{data,error}=await db.from('scheduled_sessions').select('*').eq('project_id',pid).gte('scheduled_date',new Date().toISOString().slice(0,10)).order('scheduled_date')
+    if(error)throw error
+    const p=P.find(x=>x.id===pid);if(p)p.scheduledSessions=data||[]
+    renderScheduledSessions()
+  }catch(e){console.warn('Sessions:',e.message)}
 }
-
-function barRow(label,val,max){
-  return `<div class="r-bar-row"><div class="r-bar-lbl">${esc(label)}</div><div class="r-bar-t"><div class="r-bar-f" style="width:${val/max*100}%"></div></div><div class="r-bar-v">${val}</div></div>`;
-}
-
-// ── DAILY TASKS ───────────────────────────────────────────────
-let DT_DATE='', DT_TASKS=[];
-const DT_DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const DT_MONS=['January','February','March','April','May','June','July','August','September','October','November','December'];
-
-function todayStr(){ return new Date().toISOString().slice(0,10); }
-function offsetDate(s,n){ const d=new Date(s+'T12:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
-function dtKey(d){ return 'daily-'+d; }
-function dtLoad(d){ try{ return JSON.parse(localStorage.getItem(dtKey(d))||'[]'); }catch{ return []; } }
-function dtSave(){ localStorage.setItem(dtKey(DT_DATE),JSON.stringify(DT_TASKS)); }
-
-function initDaily(){
-  DT_DATE=todayStr();
-  DT_TASKS=dtLoad(DT_DATE);
-  renderDaily();
-}
-
-function renderDaily(){
-  const today=todayStr();
-  const d=new Date(DT_DATE+'T12:00:00');
-  const isToday=DT_DATE===today;
-  const isYest=DT_DATE===offsetDate(today,-1);
-  const isTomorrow=DT_DATE===offsetDate(today,1);
-  const prefix=isToday?'Today — ':isYest?'Yesterday — ':isTomorrow?'Tomorrow — ':'';
-  document.getElementById('dt-day').textContent=prefix+DT_DAYS[d.getDay()];
-  document.getElementById('dt-date').textContent=d.getDate()+' '+DT_MONS[d.getMonth()]+' '+d.getFullYear();
-  document.getElementById('dt-nav-label').textContent=isToday?'Today':DT_DATE;
-  const nxtBtn=document.getElementById('dt-next-btn');
-  nxtBtn.style.opacity=DT_DATE>=today?'.3':'1';
-  nxtBtn.style.pointerEvents=DT_DATE>=today?'none':'';
-  updateDTProgress();
-  renderDTList();
-}
-
-function updateDTProgress(){
-  const total=DT_TASKS.length;
-  const done=DT_TASKS.filter(t=>t.done).length;
-  const pct=total?Math.round(done/total*100):0;
-  document.getElementById('dt-prog-nums').textContent=done+' / '+total;
-  document.getElementById('dt-prog-sub').textContent=total?(done===total?'All done! Great work.':(total-done)+' remaining'):'Add your first task above';
-  document.getElementById('dt-prog-fill').style.width=pct+'%';
-  document.getElementById('dt-pct').textContent=total?pct+'%':'—';
-  const streak=calcDTStreak();
-  document.getElementById('dt-streak').textContent=streak>0?streak+(streak===1?' day':' days'):'—';
-}
-
-function renderDTList(){
-  const todo=DT_TASKS.filter(t=>!t.done);
-  const done=DT_TASKS.filter(t=>t.done);
-  const today=todayStr();
-
-  const mkItem=t=>`
-    <div class="t-item${t.done?' done':''}">
-      <div class="t-row">
-        <div class="chk${t.done?' on':''}" onclick="dtToggle('${t.id}')"></div>
-        <input class="t-text" value="${esc(t.text)}" onblur="dtEdit('${t.id}',this.value)"${t.done?' disabled':''}>
-        <div class="t-meta">
-          <span class="tp-badge t${t.priority[0]}">${t.priority}</span>
-        </div>
-        <div class="t-actions">
-          <button class="ta-btn del" onclick="dtDel('${t.id}')">×</button>
-        </div>
-      </div>
-    </div>`;
-
-  const todoDivEl=document.getElementById('dt-todo-div');
-  const todoListEl=document.getElementById('dt-todo-list');
-  const doneDivEl=document.getElementById('dt-done-div');
-  const doneListEl=document.getElementById('dt-done-list');
-  const todoLbl=document.getElementById('dt-todo-lbl');
-  const doneLbl=document.getElementById('dt-done-lbl');
-
-  if(todo.length>0){
-    todoDivEl.style.display='';
-    todoLbl.textContent='Todo ('+todo.length+')';
-    todoListEl.innerHTML=todo.map(mkItem).join('');
-  } else if(DT_TASKS.length===0){
-    todoDivEl.style.display='';
-    todoLbl.textContent='Todo';
-    todoListEl.innerHTML='<div class="dt-empty-msg">Nothing here yet — add a task above</div>';
-  } else {
-    todoDivEl.style.display='none';
-    todoListEl.innerHTML='';
-  }
-
-  if(done.length>0){
-    doneDivEl.style.display='';
-    doneLbl.textContent='Done ('+done.length+')';
-    doneListEl.innerHTML=done.map(mkItem).join('');
-  } else {
-    doneDivEl.style.display='none';
-    doneListEl.innerHTML='';
-  }
-
-  const coBtn=document.getElementById('dt-carry');
-  if(DT_DATE===today){
-    const yCount=dtLoad(offsetDate(today,-1)).filter(t=>!t.done).length;
-    if(yCount>0){ coBtn.style.display=''; coBtn.textContent='Carry over '+yCount+' from yesterday →'; }
-    else coBtn.style.display='none';
-  } else { coBtn.style.display='none'; }
-}
-
-function dtToggle(id){
-  const t=DT_TASKS.find(x=>x.id===id);
-  if(!t) return;
-  t.done=!t.done;
-  dtSave(); updateDTProgress(); renderDTList();
-}
-
-function dtEdit(id,val){
-  const t=DT_TASKS.find(x=>x.id===id);
-  if(t&&val.trim()){ t.text=val.trim(); dtSave(); }
-}
-
-function dtDel(id){
-  DT_TASKS=DT_TASKS.filter(x=>x.id!==id);
-  dtSave(); updateDTProgress(); renderDTList();
-}
-
-function dtAdd(){
-  const inp=document.getElementById('dt-inp');
-  const pri=document.getElementById('dt-pri');
-  const text=inp.value.trim();
-  if(!text) return;
-  DT_TASKS.push({ id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), text, priority:pri.value, done:false });
-  dtSave(); inp.value=''; updateDTProgress(); renderDTList();
-}
-
-function dtCarryOver(){
-  const yTasks=dtLoad(offsetDate(todayStr(),-1)).filter(t=>!t.done);
-  const existing=new Set(DT_TASKS.map(t=>t.id));
-  let added=0;
-  yTasks.forEach(t=>{ if(!existing.has(t.id)){ DT_TASKS.push({...t,done:false}); added++; } });
-  if(added){ dtSave(); updateDTProgress(); renderDTList(); toast(added+' task'+(added!==1?'s':'')+' carried over'); }
-  else toast('Already up to date');
-}
-
-function dtClearDone(){
-  const n=DT_TASKS.filter(t=>t.done).length;
-  if(!n) return;
-  DT_TASKS=DT_TASKS.filter(t=>!t.done);
-  dtSave(); updateDTProgress(); renderDTList();
-  toast(n+' done task'+(n!==1?'s':'')+' cleared');
-}
-
-function dtNavDay(delta){
-  DT_DATE=offsetDate(DT_DATE,delta);
-  DT_TASKS=dtLoad(DT_DATE);
-  renderDaily();
-}
-
-function calcDTStreak(){
-  const today=todayStr();
-  let start=today;
-  if(!dtLoad(today).some(t=>t.done)) start=offsetDate(today,-1);
-  let streak=0;
-  for(let i=0;i<365;i++){
-    if(dtLoad(offsetDate(start,-i)).some(t=>t.done)) streak++;
-    else break;
-  }
-  return streak;
-}
-
-// ── SCHEDULED SESSIONS ───────────────────────────────────────
-async function loadScheduledSessions(projectId){
-  try {
-    const { data,error }=await db.from('scheduled_sessions')
-      .select('*').eq('project_id',projectId)
-      .gte('scheduled_date',new Date().toISOString().slice(0,10))
-      .order('scheduled_date');
-    if(error) throw error;
-    const p=P.find(x=>x.id===projectId);
-    if(p) p.scheduledSessions=(data||[]);
-    renderScheduledSessions();
-  } catch(e){ console.warn('Sessions load error:',e.message); }
-}
-
 function renderScheduledSessions(){
-  if(!CP) return;
-  const el=document.getElementById('sched-list');
-  if(!el) return;
-  const sessions=CP.scheduledSessions||[];
-  if(!sessions.length){ el.innerHTML='<div class="sched-empty">No sessions booked yet</div>'; return; }
-  el.innerHTML=sessions.map(s=>{
-    const d=new Date(s.scheduled_date+'T12:00:00');
-    const label=MO[d.getMonth()]+' '+d.getDate();
-    return `<div class="sched-item"><span class="sched-date">${label}</span><span class="sched-title">${esc(s.title||'Work session')} · ${s.duration_mins||90}m</span></div>`;
-  }).join('');
+  if(!CP)return;const el=document.getElementById('sched-list');if(!el)return
+  const ss=CP.scheduledSessions||[]
+  if(!ss.length){el.innerHTML='<div class="sched-empty">No sessions booked yet</div>';return}
+  el.innerHTML=ss.map(s=>{const d=new Date(s.scheduled_date+'T12:00:00');return`<div class="sched-item"><span class="sched-date">${MO[d.getMonth()]} ${d.getDate()}</span><span class="sched-title">${esc(s.title||'Work session')} · ${s.duration_mins||90}m</span></div>`}).join('')
 }
-
 function scheduleProject(){
-  if(!CP) return;
-  const msg=`Schedule next work session for ${CP.id} — ${CP.name}`;
-  navigator.clipboard.writeText(msg).then(()=>toast('Copied to clipboard — paste to Claude')).catch(()=>toast('Message: '+msg));
+  if(!CP)return
+  const msg=`Schedule next work session for ${CP.id} — ${CP.name}`
+  navigator.clipboard.writeText(msg).then(()=>toast('Copied — paste to Claude')).catch(()=>toast(msg))
 }
 
 window.addEventListener('popstate',e=>{
-  if(e.state&&e.state.projectId) openProject(e.state.projectId);
-  else if(!location.hash) backToOverview();
-});
+  if(e.state?.projectId)openProject(e.state.projectId)
+  else if(!location.hash)backToOverview()
+})
 
-// ── TOAST ─────────────────────────────────────────────────────
 function toast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2200);
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show')
+  setTimeout(()=>t.classList.remove('show'),2200)
 }
 
-// ── INIT ──────────────────────────────────────────────────────
-loadProjects();
+loadProjects()
 </script>
 </body>
 </html>
