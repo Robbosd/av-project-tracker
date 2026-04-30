@@ -267,6 +267,17 @@ body{background:var(--bg);font-family:var(--sans);color:var(--tl);min-height:100
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#e2e2e2;border-radius:2px}
 input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0);cursor:pointer}
 
+/* SCHEDULING */
+.sched-badge{background:#dcfce7;color:#166534;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:4px;font-weight:600}
+.sched-panel{background:var(--cd);border:1px solid var(--b);border-radius:10px;padding:12px 14px;margin-top:12px}
+.sched-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:13px;color:var(--tl)}
+.sched-item:last-child{border-bottom:none}
+.sched-date{font-family:var(--mono);font-size:11px;color:var(--mid);flex-shrink:0;min-width:72px;padding-top:1px}
+.sched-title{flex:1;line-height:1.4}
+.btn-sched{background:#103a10;color:#5cb85c;border:none;border-radius:7px;padding:8px 14px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .12s;width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-sched:hover{opacity:.85}
+.sched-empty{font-size:13px;color:var(--mid);font-family:var(--mono);padding:4px 0}
+
 /* DAILY TASKS */
 .dt-streak-badge{background:#1f1f1f;color:#fff;border-radius:8px;padding:6px 14px;font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.04em;flex-shrink:0}
 .dt-progress{background:var(--cd);border:1px solid var(--b);border-radius:13px;padding:18px 22px;margin-bottom:26px;display:flex;align-items:center;gap:22px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
@@ -424,6 +435,13 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0);cursor:poin
           <div id="task-prog-fill" style="position:absolute;top:0;left:0;height:100%;background:var(--cl);opacity:.5;transition:width .3s"></div>
         </div>
       </div>
+
+      <!-- Scheduled sessions -->
+      <div class="sched-panel" id="sched-panel">
+        <div class="slbl" style="margin-bottom:8px">Scheduled sessions</div>
+        <div id="sched-list"><div class="sched-empty">No sessions booked yet</div></div>
+        <button class="btn-sched" onclick="scheduleProject()">📅 Schedule next session</button>
+      </div>
     </div>
   </div>
 </div>
@@ -446,6 +464,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0);cursor:poin
     <div class="fg"><label class="flbl">Est. hours saved / month <span class="req">*</span></label><input class="finput" id="f-hours" type="number" placeholder="e.g. 80 — enter 0 if unknown"></div>
     <div class="fg"><label class="flbl">Build effort</label><select class="fsel" id="f-effort"><option>Small — days</option><option>Medium — weeks</option><option>Large — months</option></select></div>
     <div class="fg"><label class="flbl">% complete <span class="req">*</span></label><input class="finput" id="f-prog" type="number" placeholder="0–100" min="0" max="100"></div>
+    <div class="fg"><label class="flbl">Session length (mins)</label><input class="finput" id="f-session" type="number" placeholder="90" value="90" min="30" max="240"></div>
   </div>
   <div class="fsec">Timeline &amp; linking</div>
   <div class="form-grid">
@@ -601,6 +620,9 @@ function toLocal(row){
     rag:row.rag||'', ragNote:row.rag_note||'',
     code:row.code||'', codeLang:row.code_lang||'python',
     completedDate:row.completed_date||'',
+    sessionMins:row.session_length_mins||90,
+    sessionsScheduled:row.sessions_scheduled||0,
+    scheduledSessions:[],
     tasks:[], notes:[], links:[],
   };
 }
@@ -614,6 +636,8 @@ const DB_FIELD={
   constraints:'constraints', dod:'dod', stakeholders:'stakeholders',
   rag:'rag', ragNote:'rag_note', code:'code', codeLang:'code_lang',
   completedDate:'completed_date',
+  sessionMins:'session_length_mins',
+  sessionsScheduled:'sessions_scheduled',
 };
 
 // ── LOAD DATA ─────────────────────────────────────────────────
@@ -623,6 +647,8 @@ async function loadProjects(){
     if(error) throw error;
     P=(data||[]).map(toLocal);
     renderOverview(); updateCount();
+    const hash=location.hash.slice(1);
+    if(hash){const found=P.find(p=>p.id===hash);if(found)openProject(hash);}
   } catch(e){ toast('Error loading projects: '+e.message); }
 }
 
@@ -727,6 +753,7 @@ function renderOverview(){
 function cardHTML(p,th){
   const prog=p.progress||0;
   const tags=(p.tags||[]).map(t=>`<span class="ctag">${esc(t)}</span>`).join('');
+  const schedBadge=p.sessionsScheduled>0?`<span class="sched-badge">📅 ${p.sessionsScheduled} session${p.sessionsScheduled!==1?'s':''}</span>`:'';
   const tc=p.tasks?p.tasks.length:0;
   const td=p.tasks?p.tasks.filter(t=>t.done).length:0;
   const ragDot=p.rag?`<span class="rag-dot rag-${p.rag}"></span>`:'';
@@ -737,7 +764,7 @@ function cardHTML(p,th){
     <div class="c-prog"><div class="c-prog-fill" style="width:${prog}%"></div></div>
     <div class="c-foot">
       <div>
-        <div class="c-tags">${tags}</div>
+        <div class="c-tags">${tags}${schedBadge}</div>
         <div class="c-meta-foot">${tc>0?td+'/'+tc+' tasks · ':''} ${p.bu}</div>
       </div>
       <div style="text-align:right">
@@ -752,6 +779,7 @@ function cardHTML(p,th){
 async function openProject(id){
   CP=P.find(p=>p.id===id);
   if(!CP) return;
+  history.pushState({projectId:id},'',location.pathname+'#'+id);
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-detail').classList.add('active');
@@ -772,6 +800,7 @@ async function openProject(id){
   document.getElementById('code-lang').value=CP.codeLang||'python';
   document.getElementById('gh-in').value=CP.github||'';
   document.getElementById('rag-note').value=CP.ragNote||'';
+  loadScheduledSessions(id);
 }
 
 function renderBadges(){
@@ -812,7 +841,13 @@ function renderMeta(){
         ${['Storage','Finance','Sales / Commercial','Customer Ops','People / HR','Tech / Engineering','Marketing','Data / BI','Cross-functional'].map(s=>`<option ${CP.bu===s?'selected':''}>${s}</option>`).join('')}
       </select>
     </div>
-    <div class="meta-row"><span class="mk">Deps</span><input class="mv" value="${esc(CP.deps||'')}" placeholder="None" onblur="sf('deps',this.value)" style="font-size:13px"></div>`;
+    <div class="meta-row"><span class="mk">Deps</span><input class="mv" value="${esc(CP.deps||'')}" placeholder="None" onblur="sf('deps',this.value)" style="font-size:13px"></div>
+    <div class="meta-row"><span class="mk">Session</span>
+      <select class="mv-sel" onchange="sf('sessionMins',parseInt(this.value))">
+        ${[30,45,60,90,120].map(m=>`<option value="${m}" ${(CP.sessionMins||90)===m?'selected':''}>${m} min</option>`).join('')}
+      </select>
+    </div>
+    <div class="meta-row"><span class="mk">Sessions</span><span style="font-family:var(--mono);font-size:14px;color:var(--tl)">${CP.sessionsScheduled||0} booked</span></div>`;
   renderTaskSummary();
 }
 
@@ -838,7 +873,7 @@ function renderGhWrap(){
   } else { wrap.innerHTML=''; }
 }
 
-function backToOverview(){ CP=null; nav('overview'); }
+function backToOverview(){ CP=null; history.pushState({},'',location.pathname); nav('overview'); }
 
 async function deleteProject(){
   if(!CP) return;
@@ -1190,6 +1225,8 @@ async function submitProject(){
     problem:document.getElementById('f-problem').value.trim(),
     dod:document.getElementById('f-dod').value.trim(),
     completed_date:status==='DONE'?today:null,
+    session_length_mins:parseInt(document.getElementById('f-session').value)||90,
+    sessions_scheduled:0,
   };
 
   P.unshift(toLocal(row));
@@ -1480,6 +1517,44 @@ function calcDTStreak(){
   }
   return streak;
 }
+
+// ── SCHEDULED SESSIONS ───────────────────────────────────────
+async function loadScheduledSessions(projectId){
+  try {
+    const { data,error }=await db.from('scheduled_sessions')
+      .select('*').eq('project_id',projectId)
+      .gte('scheduled_date',new Date().toISOString().slice(0,10))
+      .order('scheduled_date');
+    if(error) throw error;
+    const p=P.find(x=>x.id===projectId);
+    if(p) p.scheduledSessions=(data||[]);
+    renderScheduledSessions();
+  } catch(e){ console.warn('Sessions load error:',e.message); }
+}
+
+function renderScheduledSessions(){
+  if(!CP) return;
+  const el=document.getElementById('sched-list');
+  if(!el) return;
+  const sessions=CP.scheduledSessions||[];
+  if(!sessions.length){ el.innerHTML='<div class="sched-empty">No sessions booked yet</div>'; return; }
+  el.innerHTML=sessions.map(s=>{
+    const d=new Date(s.scheduled_date+'T12:00:00');
+    const label=MO[d.getMonth()]+' '+d.getDate();
+    return `<div class="sched-item"><span class="sched-date">${label}</span><span class="sched-title">${esc(s.title||'Work session')} · ${s.duration_mins||90}m</span></div>`;
+  }).join('');
+}
+
+function scheduleProject(){
+  if(!CP) return;
+  const msg=`Schedule next work session for ${CP.id} — ${CP.name}`;
+  navigator.clipboard.writeText(msg).then(()=>toast('Copied to clipboard — paste to Claude')).catch(()=>toast('Message: '+msg));
+}
+
+window.addEventListener('popstate',e=>{
+  if(e.state&&e.state.projectId) openProject(e.state.projectId);
+  else if(!location.hash) backToOverview();
+});
 
 // ── TOAST ─────────────────────────────────────────────────────
 function toast(msg){
