@@ -295,6 +295,7 @@ input[type=date]::-webkit-calendar-picker-indicator{cursor:pointer}
     </div>
     <div class="qt-add-row">
       <input class="qt-input" id="qt-inp" type="text" placeholder="What needs doing today? Hit Enter to add…" onkeydown="if(event.key==='Enter')qtAdd()">
+      <input class="tdate" id="qt-due" type="date" title="Deadline (optional)">
       <select class="dur-sel" id="qt-dur"><option value="">—</option><option value="15">15m</option><option value="30">30m</option><option value="45">45m</option><option value="60">60m</option><option value="90">90m</option></select>
       <button class="btn-add" onclick="qtAdd()">+ Add</button>
     </div>
@@ -506,20 +507,30 @@ function renderQT(){
   const tot=document.getElementById('qt-total')
   if(tot)tot.textContent=pendingMins?'· '+fmtMins(pendingMins)+' left':''
   if(!QT.length){el.innerHTML='<div class="qt-empty">Nothing yet</div>';return}
-  el.innerHTML=QT.map((t,i)=>`
-    <div class="qt-item${t.done?' done':''}">
+  el.innerHTML=QT.map((t,i)=>{
+    let dueChip=''
+    if(t.due_date){
+      const td=Math.ceil((new Date(t.due_date+'T12:00:00')-TODAY)/86400000)
+      const label=td<0?'OVERDUE':td===0?'due today':td===1?'due tomorrow':'due '+t.due_date
+      const urgent=td<=0
+      dueChip=`<span class="dur-chip" style="${urgent?'background:#fee2e2;color:#b91c1c':''}">${label}</span>`
+    }
+    return`<div class="qt-item${t.done?' done':''}">
       <div class="chk${t.done?' on':''}" onclick="qtToggle(${i})"></div>
       <span class="qt-text">${esc(t.text)}</span>
       ${t.duration_mins?`<span class="dur-chip">${t.duration_mins}m</span>`:''}
+      ${dueChip}
       <button class="qt-del" onclick="qtDel(${i})">×</button>
-    </div>`).join('')
+    </div>`
+  }).join('')
 }
 
 async function qtAdd(){
   const inp=document.getElementById('qt-inp'),text=inp.value.trim();if(!text)return
   const dur=parseInt(document.getElementById('qt-dur').value)||null
-  const task={id:'QT'+Date.now(),text,done:false,task_date:QT_DATE,duration_mins:dur}
-  QT.push(task);inp.value='';document.getElementById('qt-dur').value='';renderQT()
+  const due=document.getElementById('qt-due').value||null
+  const task={id:'QT'+Date.now(),text,done:false,task_date:QT_DATE,duration_mins:dur,due_date:due}
+  QT.push(task);inp.value='';document.getElementById('qt-dur').value='';document.getElementById('qt-due').value='';renderQT()
   try{await db.from('daily_tasks').insert(task)}catch(e){toast('Error: '+e.message)}
 }
 
@@ -544,8 +555,13 @@ async function scheduleAll(){
   const pending=QT.filter(t=>!t.done)
   if(pending.length){
     const totalMins=pending.filter(t=>t.duration_mins).reduce((s,t)=>s+(t.duration_mins||0),0)
-    const taskList=pending.map(t=>t.duration_mins?`${t.text} (${t.duration_mins}m)`:t.text).join(', ')
-    lines.push(`Today's tasks${totalMins?' (~'+fmtMins(totalMins)+')':''}: ${taskList}`)
+    lines.push(`Today's tasks${totalMins?' (~'+fmtMins(totalMins)+')':''}:`)
+    pending.forEach(t=>{
+      const parts=[]
+      if(t.duration_mins)parts.push(t.duration_mins+'m')
+      if(t.due_date){const td=Math.ceil((new Date(t.due_date+'T12:00:00')-TODAY)/86400000);parts.push(td<0?'OVERDUE':td===0?'due today':td===1?'due tomorrow':`due ${t.due_date}`)}
+      lines.push(`  • ${t.text}${parts.length?' ('+parts.join(', ')+')':''}`)
+    })
   }
 
   // Active + blocked projects — fetch pending tasks fresh to get deadlines
