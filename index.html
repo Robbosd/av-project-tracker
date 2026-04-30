@@ -246,6 +246,9 @@ body{background:var(--bg);font-family:var(--sans);color:var(--tl);min-height:100
 .qt-item:hover .qt-del{opacity:1}
 .qt-del:hover{color:#b91c1c}
 .qt-empty{font-size:13px;color:var(--mid);padding:6px 2px;font-family:var(--mono)}
+.dur-sel{background:var(--cd);border:1px solid var(--b);border-radius:8px;padding:9px 8px;font-family:var(--mono);font-size:13px;color:var(--mid);outline:none;cursor:pointer;width:72px}
+.dur-chip{font-family:var(--mono);font-size:11px;color:var(--mid);background:#f4f4f4;padding:2px 6px;border-radius:4px;flex-shrink:0}
+.qt-total{font-family:var(--mono);font-size:12px;color:var(--mid);margin-left:8px}
 
 /* TOAST */
 .toast{position:fixed;bottom:26px;right:26px;background:#1f1f1f;color:#fff;padding:10px 18px;border-radius:9px;font-size:14px;font-weight:500;opacity:0;transform:translateY(6px);transition:opacity .18s,transform .18s;pointer-events:none;z-index:999}
@@ -284,11 +287,12 @@ input[type=date]::-webkit-calendar-picker-indicator{cursor:pointer}
   <!-- QUICK TASKS -->
   <div class="qt-panel">
     <div class="qt-hdr">
-      <span class="qt-day" id="qt-day"></span>
+      <span class="qt-day" id="qt-day"></span><span class="qt-total" id="qt-total"></span>
       <button class="btn-sm" id="qt-clear-btn" onclick="qtClearDone()" style="display:none">Clear done</button>
     </div>
     <div class="qt-add-row">
       <input class="qt-input" id="qt-inp" type="text" placeholder="What needs doing today? Hit Enter to add…" onkeydown="if(event.key==='Enter')qtAdd()">
+      <select class="dur-sel" id="qt-dur"><option value="">—</option><option value="15">15m</option><option value="30">30m</option><option value="45">45m</option><option value="60">60m</option><option value="90">90m</option></select>
       <button class="btn-add" onclick="qtAdd()">+ Add</button>
     </div>
     <div class="qt-list" id="qt-list"></div>
@@ -336,6 +340,7 @@ input[type=date]::-webkit-calendar-picker-indicator{cursor:pointer}
           <input class="ti" id="ta-txt" type="text" placeholder="Type a task and press Enter…" onkeydown="if(event.key==='Enter')addTask()">
           <select class="tsel" id="ta-pri"><option value="Medium">Med</option><option value="High">High</option><option value="Low">Low</option></select>
           <input class="tdate" id="ta-due" type="date">
+          <select class="dur-sel" id="ta-dur"><option value="">—</option><option value="15">15m</option><option value="30">30m</option><option value="45">45m</option><option value="60">60m</option><option value="90">90m</option></select>
           <button class="btn-add" onclick="addTask()">+ Add</button>
         </div>
         <div class="task-list" id="tlist"></div>
@@ -493,19 +498,25 @@ async function loadQT(){
 function renderQT(){
   const el=document.getElementById('qt-list');if(!el)return
   const cb=document.getElementById('qt-clear-btn');if(cb)cb.style.display=QT.some(t=>t.done)?'':'none'
+  // running total of pending timed tasks
+  const pendingMins=QT.filter(t=>!t.done&&t.duration_mins).reduce((s,t)=>s+(t.duration_mins||0),0)
+  const tot=document.getElementById('qt-total')
+  if(tot)tot.textContent=pendingMins?'· '+fmtMins(pendingMins)+' left':''
   if(!QT.length){el.innerHTML='<div class="qt-empty">Nothing yet</div>';return}
   el.innerHTML=QT.map((t,i)=>`
     <div class="qt-item${t.done?' done':''}">
       <div class="chk${t.done?' on':''}" onclick="qtToggle(${i})"></div>
       <span class="qt-text">${esc(t.text)}</span>
+      ${t.duration_mins?`<span class="dur-chip">${t.duration_mins}m</span>`:''}
       <button class="qt-del" onclick="qtDel(${i})">×</button>
     </div>`).join('')
 }
 
 async function qtAdd(){
   const inp=document.getElementById('qt-inp'),text=inp.value.trim();if(!text)return
-  const task={id:'QT'+Date.now(),text,done:false,task_date:QT_DATE}
-  QT.push(task);inp.value='';renderQT()
+  const dur=parseInt(document.getElementById('qt-dur').value)||null
+  const task={id:'QT'+Date.now(),text,done:false,task_date:QT_DATE,duration_mins:dur}
+  QT.push(task);inp.value='';document.getElementById('qt-dur').value='';renderQT()
   try{await db.from('daily_tasks').insert(task)}catch(e){toast('Error: '+e.message)}
 }
 
@@ -548,7 +559,7 @@ async function loadProjectDetail(id){
     const p=P.find(x=>x.id===id);if(!p)return
     p.tasks=(tR.data||[]).map(t=>({
       id:t.id,text:t.text,done:t.done,priority:t.priority||'Medium',due:t.due_date||'',
-      showSubs:false,
+      durationMins:t.duration_mins||null,showSubs:false,
       subtasks:(t.subtasks||[]).sort((a,b)=>a.sort_order-b.sort_order).map(s=>({id:s.id,text:s.text,done:s.done})),
     }))
     p.notes=(nR.data||[]).map(n=>({id:n.id,text:n.text,author:n.author||'Scott R.',date:n.created_at?.slice(0,10)||''}))
@@ -567,6 +578,7 @@ function nav(page){
 }
 
 function updateCount(){document.getElementById('sf').textContent=P.length+' project'+(P.length!==1?'s':'')}
+function fmtMins(m){const h=Math.floor(m/60),r=m%60;return h&&r?`${h}h ${r}m`:h?`${h}h`:`${r}m`}
 function fmtDate(d){if(!d)return'—';const t=new Date(d+'T12:00:00');return MO[t.getMonth()]+' '+t.getFullYear()}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
@@ -777,10 +789,11 @@ async function addTask(){
   if(!CP)return
   const txt=document.getElementById('ta-txt').value.trim();if(!txt)return
   const tid='T'+Date.now(),pri=document.getElementById('ta-pri').value,due=document.getElementById('ta-due').value||''
-  CP.tasks.push({id:tid,text:txt,done:false,priority:pri,due,subtasks:[],showSubs:false})
+  const dur=parseInt(document.getElementById('ta-dur').value)||null
+  CP.tasks.push({id:tid,text:txt,done:false,priority:pri,due,durationMins:dur,subtasks:[],showSubs:false})
   document.getElementById('ta-txt').value='';document.getElementById('ta-due').value=''
   renderTasks();renderTaskSummary();toast('Task added')
-  try{const{error}=await db.from('tasks').insert({id:tid,project_id:CP.id,text:txt,done:false,priority:pri,due_date:due||null,sort_order:CP.tasks.length-1});if(error)throw error}
+  try{const{error}=await db.from('tasks').insert({id:tid,project_id:CP.id,text:txt,done:false,priority:pri,due_date:due||null,duration_mins:dur,sort_order:CP.tasks.length-1});if(error)throw error}
   catch(e){toast('Error: '+e.message)}
 }
 
@@ -812,6 +825,7 @@ function taskHTML(t,i){
       <input class="t-text" value="${esc(t.text)}" onblur="editTask(${i},this.value)">
       <div class="t-meta">
         <span class="tp-badge ${pc}">${t.priority}</span>
+        ${t.durationMins?`<span class="dur-chip">${t.durationMins}m</span>`:''}
         ${t.due?`<span class="t-due${ov?' ov':''}">${t.due}</span>`:''}
         <div class="t-actions">
           <button class="ta-btn" onclick="moveTask(${i},-1)">↑</button>
@@ -951,7 +965,12 @@ function renderScheduledSessions(){
 }
 function scheduleProject(){
   if(!CP)return
-  const msg=`Schedule next work session for ${CP.id} — ${CP.name}`
+  const remaining=CP.tasks.filter(t=>!t.done)
+  const timedMins=remaining.filter(t=>t.durationMins).reduce((s,t)=>s+(t.durationMins||0),0)
+  const timedCount=remaining.filter(t=>t.durationMins).length
+  const timeHint=timedMins?` — ${timedCount} task${timedCount!==1?'s':''} remaining, ~${fmtMins(timedMins)} of work`
+    :remaining.length?` — ${remaining.length} task${remaining.length!==1?'s':''} remaining`:''
+  const msg=`Schedule next work session for ${CP.id} — ${CP.name}${timeHint}`
   navigator.clipboard.writeText(msg).then(()=>toast('Copied — paste to Claude')).catch(()=>toast(msg))
 }
 
