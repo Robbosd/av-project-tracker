@@ -297,6 +297,8 @@ input[type=date]::-webkit-calendar-picker-indicator{cursor:pointer}
       <input class="qt-input" id="qt-inp" type="text" placeholder="What needs doing today? Hit Enter to add…" onkeydown="if(event.key==='Enter')qtAdd()">
       <input class="tdate" id="qt-due" type="date" title="Deadline (optional)">
       <select class="dur-sel" id="qt-dur"><option value="">—</option><option value="15">15m</option><option value="30">30m</option><option value="45">45m</option><option value="60">60m</option><option value="90">90m</option></select>
+      <span style="font-size:12px;color:var(--mid);flex-shrink:0">+</span>
+      <select class="dur-sel" id="qt-dur2" title="Split: second slot duration"><option value="">—</option><option value="15">15m</option><option value="30">30m</option><option value="45">45m</option><option value="60">60m</option><option value="90">90m</option></select>
       <button class="btn-add" onclick="qtAdd()">+ Add</button>
     </div>
     <div class="qt-list" id="qt-list"></div>
@@ -345,6 +347,8 @@ input[type=date]::-webkit-calendar-picker-indicator{cursor:pointer}
           <select class="tsel" id="ta-pri"><option value="Medium">Med</option><option value="High">High</option><option value="Low">Low</option></select>
           <input class="tdate" id="ta-due" type="date">
           <select class="dur-sel" id="ta-dur"><option value="">—</option><option value="15">15m</option><option value="30">30m</option><option value="45">45m</option><option value="60">60m</option><option value="90">90m</option></select>
+          <span style="font-size:12px;color:var(--mid);flex-shrink:0">+</span>
+          <select class="dur-sel" id="ta-dur2" title="Split: second slot duration"><option value="">—</option><option value="15">15m</option><option value="30">30m</option><option value="45">45m</option><option value="60">60m</option><option value="90">90m</option></select>
           <button class="btn-add" onclick="addTask()">+ Add</button>
         </div>
         <div class="task-list" id="tlist"></div>
@@ -503,7 +507,7 @@ function renderQT(){
   const el=document.getElementById('qt-list');if(!el)return
   const cb=document.getElementById('qt-clear-btn');if(cb)cb.style.display=QT.some(t=>t.done)?'':'none'
   // running total of pending timed tasks
-  const pendingMins=QT.filter(t=>!t.done&&t.duration_mins).reduce((s,t)=>s+(t.duration_mins||0),0)
+  const pendingMins=QT.filter(t=>!t.done).reduce((s,t)=>s+(t.duration_mins||0)+(t.duration_mins_2||0),0)
   const tot=document.getElementById('qt-total')
   if(tot)tot.textContent=pendingMins?'· '+fmtMins(pendingMins)+' left':''
   if(!QT.length){el.innerHTML='<div class="qt-empty">Nothing yet</div>';return}
@@ -518,7 +522,7 @@ function renderQT(){
     return`<div class="qt-item${t.done?' done':''}">
       <div class="chk${t.done?' on':''}" onclick="qtToggle(${i})"></div>
       <span class="qt-text">${esc(t.text)}</span>
-      ${t.duration_mins?`<span class="dur-chip">${t.duration_mins}m</span>`:''}
+      ${t.duration_mins?`<span class="dur-chip">${t.duration_mins}m${t.duration_mins_2?' + '+t.duration_mins_2+'m':''}</span>`:''}
       ${dueChip}
       <button class="qt-del" onclick="qtDel(${i})">×</button>
     </div>`
@@ -528,9 +532,10 @@ function renderQT(){
 async function qtAdd(){
   const inp=document.getElementById('qt-inp'),text=inp.value.trim();if(!text)return
   const dur=parseInt(document.getElementById('qt-dur').value)||null
+  const dur2=parseInt(document.getElementById('qt-dur2').value)||null
   const due=document.getElementById('qt-due').value||null
-  const task={id:'QT'+Date.now(),text,done:false,task_date:QT_DATE,duration_mins:dur,due_date:due}
-  QT.push(task);inp.value='';document.getElementById('qt-dur').value='';document.getElementById('qt-due').value='';renderQT()
+  const task={id:'QT'+Date.now(),text,done:false,task_date:QT_DATE,duration_mins:dur,duration_mins_2:dur2,due_date:due}
+  QT.push(task);inp.value='';document.getElementById('qt-dur').value='';document.getElementById('qt-dur2').value='';document.getElementById('qt-due').value='';renderQT()
   try{await db.from('daily_tasks').insert(task)}catch(e){toast('Error: '+e.message)}
 }
 
@@ -554,11 +559,11 @@ async function scheduleAll(){
   // Daily tasks
   const pending=QT.filter(t=>!t.done)
   if(pending.length){
-    const totalMins=pending.filter(t=>t.duration_mins).reduce((s,t)=>s+(t.duration_mins||0),0)
+    const totalMins=pending.reduce((s,t)=>s+(t.duration_mins||0)+(t.duration_mins_2||0),0)
     lines.push(`Today's tasks${totalMins?' (~'+fmtMins(totalMins)+')':''}:`)
     pending.forEach(t=>{
       const parts=[]
-      if(t.duration_mins)parts.push(t.duration_mins+'m')
+      if(t.duration_mins)parts.push(t.duration_mins_2?t.duration_mins+'m + '+t.duration_mins_2+'m (split 2 slots)':t.duration_mins+'m')
       if(t.due_date){const td=Math.ceil((new Date(t.due_date+'T12:00:00')-TODAY)/86400000);parts.push(td<0?'OVERDUE':td===0?'due today':td===1?'due tomorrow':`due ${t.due_date}`)}
       lines.push(`  • ${t.text}${parts.length?' ('+parts.join(', ')+')':''}`)
     })
@@ -569,7 +574,7 @@ async function scheduleAll(){
   const tasksByProject={}
   try{
     if(active.length){
-      const{data}=await db.from('tasks').select('project_id,text,due_date,duration_mins').in('project_id',active.map(p=>p.id)).eq('done',false).order('sort_order')
+      const{data}=await db.from('tasks').select('project_id,text,due_date,duration_mins,duration_mins_2').in('project_id',active.map(p=>p.id)).eq('done',false).order('sort_order')
       ;(data||[]).forEach(t=>{if(!tasksByProject[t.project_id])tasksByProject[t.project_id]=[];tasksByProject[t.project_id].push(t)})
     }
   }catch(e){/* proceed without task detail */}
@@ -582,7 +587,7 @@ async function scheduleAll(){
     const ptasks=tasksByProject[p.id]||[]
     ptasks.forEach(t=>{
       const parts=[]
-      if(t.duration_mins)parts.push(t.duration_mins+'m')
+      if(t.duration_mins)parts.push(t.duration_mins_2?t.duration_mins+'m + '+t.duration_mins_2+'m (split 2 slots)':t.duration_mins+'m')
       if(t.due_date){const td=Math.ceil((new Date(t.due_date+'T12:00:00')-TODAY)/86400000);parts.push(td<0?'OVERDUE':td===0?'due today':td===1?'due tomorrow':`due ${t.due_date}`)}
       lines.push(`  • ${t.text}${parts.length?' ('+parts.join(', ')+')':''}`)
     })
@@ -623,7 +628,7 @@ async function loadProjectDetail(id){
     const p=P.find(x=>x.id===id);if(!p)return
     p.tasks=(tR.data||[]).map(t=>({
       id:t.id,text:t.text,done:t.done,priority:t.priority||'Medium',due:t.due_date||'',
-      durationMins:t.duration_mins||null,showSubs:false,
+      durationMins:t.duration_mins||null,durationMins2:t.duration_mins_2||null,showSubs:false,
       subtasks:(t.subtasks||[]).sort((a,b)=>a.sort_order-b.sort_order).map(s=>({id:s.id,text:s.text,done:s.done})),
     }))
     p.notes=(nR.data||[]).map(n=>({id:n.id,text:n.text,author:n.author||'Scott R.',date:n.created_at?.slice(0,10)||''}))
@@ -854,10 +859,11 @@ async function addTask(){
   const txt=document.getElementById('ta-txt').value.trim();if(!txt)return
   const tid='T'+Date.now(),pri=document.getElementById('ta-pri').value,due=document.getElementById('ta-due').value||''
   const dur=parseInt(document.getElementById('ta-dur').value)||null
-  CP.tasks.push({id:tid,text:txt,done:false,priority:pri,due,durationMins:dur,subtasks:[],showSubs:false})
-  document.getElementById('ta-txt').value='';document.getElementById('ta-due').value=''
+  const dur2=parseInt(document.getElementById('ta-dur2').value)||null
+  CP.tasks.push({id:tid,text:txt,done:false,priority:pri,due,durationMins:dur,durationMins2:dur2,subtasks:[],showSubs:false})
+  document.getElementById('ta-txt').value='';document.getElementById('ta-due').value='';document.getElementById('ta-dur2').value=''
   renderTasks();renderTaskSummary();toast('Task added')
-  try{const{error}=await db.from('tasks').insert({id:tid,project_id:CP.id,text:txt,done:false,priority:pri,due_date:due||null,duration_mins:dur,sort_order:CP.tasks.length-1});if(error)throw error}
+  try{const{error}=await db.from('tasks').insert({id:tid,project_id:CP.id,text:txt,done:false,priority:pri,due_date:due||null,duration_mins:dur,duration_mins_2:dur2,sort_order:CP.tasks.length-1});if(error)throw error}
   catch(e){toast('Error: '+e.message)}
 }
 
@@ -889,7 +895,7 @@ function taskHTML(t,i){
       <input class="t-text" value="${esc(t.text)}" onblur="editTask(${i},this.value)">
       <div class="t-meta">
         <span class="tp-badge ${pc}">${t.priority}</span>
-        ${t.durationMins?`<span class="dur-chip">${t.durationMins}m</span>`:''}
+        ${t.durationMins?`<span class="dur-chip">${t.durationMins}m${t.durationMins2?' + '+t.durationMins2+'m':''}</span>`:''}
         ${t.due?`<span class="t-due${ov?' ov':''}">${t.due}</span>`:''}
         <div class="t-actions">
           <button class="ta-btn" onclick="moveTask(${i},-1)">↑</button>
@@ -1036,7 +1042,7 @@ function scheduleProject(){
   const lines=[`Schedule next work session for ${CP.id} — ${CP.name} [${CP.priority} priority${dl}]${sched}`]
   remaining.forEach(t=>{
     const parts=[]
-    if(t.durationMins)parts.push(t.durationMins+'m')
+    if(t.durationMins)parts.push(t.durationMins2?t.durationMins+'m + '+t.durationMins2+'m (split 2 slots)':t.durationMins+'m')
     if(t.due){const td=Math.ceil((new Date(t.due+'T12:00:00')-TODAY)/86400000);parts.push(td<0?'OVERDUE':td===0?'due today':td===1?'due tomorrow':`due ${t.due}`)}
     lines.push(`  • ${t.text}${parts.length?' ('+parts.join(', ')+')':''}`)
   })
