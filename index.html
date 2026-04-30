@@ -229,6 +229,24 @@ body{background:var(--bg);font-family:var(--sans);color:var(--tl);min-height:100
 .btn-sched:hover{opacity:.85}
 .sched-empty{font-size:13px;color:var(--mid);font-family:var(--mono);padding:4px 0}
 
+/* QUICK TASKS */
+.qt-panel{background:var(--cd);border:1px solid var(--b);border-radius:13px;padding:18px 22px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.qt-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.qt-day{font-size:13px;font-weight:600;color:var(--tl)}
+.qt-add-row{display:flex;gap:8px;margin-bottom:4px}
+.qt-input{flex:1;background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:14px;color:var(--tl);outline:none;transition:border-color .12s}
+.qt-input:focus{border-color:#1f1f1f;background:var(--cd)}
+.qt-input::placeholder{color:rgba(0,0,0,0.3)}
+.qt-list{display:flex;flex-direction:column}
+.qt-item{display:flex;align-items:center;gap:9px;padding:6px 2px;border-bottom:1px solid #f5f5f5}
+.qt-item:last-child{border-bottom:none}
+.qt-item.done .qt-text{text-decoration:line-through;opacity:.38}
+.qt-text{flex:1;font-size:14px;color:var(--tl)}
+.qt-del{background:none;border:none;color:var(--mid);cursor:pointer;font-size:16px;opacity:0;transition:opacity .12s,color .12s;padding:0 4px;line-height:1}
+.qt-item:hover .qt-del{opacity:1}
+.qt-del:hover{color:#b91c1c}
+.qt-empty{font-size:13px;color:var(--mid);padding:6px 2px;font-family:var(--mono)}
+
 /* TOAST */
 .toast{position:fixed;bottom:26px;right:26px;background:#1f1f1f;color:#fff;padding:10px 18px;border-radius:9px;font-size:14px;font-weight:500;opacity:0;transform:translateY(6px);transition:opacity .18s,transform .18s;pointer-events:none;z-index:999}
 .toast.show{opacity:1;transform:translateY(0)}
@@ -262,6 +280,20 @@ input[type=date]::-webkit-calendar-picker-indicator{cursor:pointer}
 <!-- OVERVIEW -->
 <div id="page-overview" class="page active">
   <div class="ph"><div><div class="ph-lbl">All initiatives</div><div class="ph-title">Project tracker</div></div></div>
+
+  <!-- QUICK TASKS -->
+  <div class="qt-panel">
+    <div class="qt-hdr">
+      <span class="qt-day" id="qt-day"></span>
+      <button class="btn-sm" id="qt-clear-btn" onclick="qtClearDone()" style="display:none">Clear done</button>
+    </div>
+    <div class="qt-add-row">
+      <input class="qt-input" id="qt-inp" type="text" placeholder="What needs doing today? Hit Enter to add…" onkeydown="if(event.key==='Enter')qtAdd()">
+      <button class="btn-add" onclick="qtAdd()">+ Add</button>
+    </div>
+    <div class="qt-list" id="qt-list"></div>
+  </div>
+
   <div class="stats" id="stat-row"></div>
   <div class="filter-bar">
     <input class="fsearch" id="ov-q" type="text" placeholder="Search…" oninput="renderOverview()">
@@ -442,12 +474,62 @@ const DBF={
   sessionMins:'session_length_mins',sessionsScheduled:'sessions_scheduled',
 }
 
+// ── QUICK TASKS ───────────────────────────────────────────────
+let QT=[]
+const QT_DATE=new Date().toISOString().slice(0,10)
+const QT_DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+const QT_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December']
+
+async function loadQT(){
+  const d=new Date()
+  document.getElementById('qt-day').textContent=QT_DAYS[d.getDay()]+' '+d.getDate()+' '+QT_MONTHS[d.getMonth()]
+  try{
+    const{data,error}=await db.from('daily_tasks').select('*').eq('task_date',QT_DATE).order('created_at')
+    if(error)throw error
+    QT=data||[];renderQT()
+  }catch(e){renderQT()}
+}
+
+function renderQT(){
+  const el=document.getElementById('qt-list');if(!el)return
+  const cb=document.getElementById('qt-clear-btn');if(cb)cb.style.display=QT.some(t=>t.done)?'':'none'
+  if(!QT.length){el.innerHTML='<div class="qt-empty">Nothing yet</div>';return}
+  el.innerHTML=QT.map((t,i)=>`
+    <div class="qt-item${t.done?' done':''}">
+      <div class="chk${t.done?' on':''}" onclick="qtToggle(${i})"></div>
+      <span class="qt-text">${esc(t.text)}</span>
+      <button class="qt-del" onclick="qtDel(${i})">×</button>
+    </div>`).join('')
+}
+
+async function qtAdd(){
+  const inp=document.getElementById('qt-inp'),text=inp.value.trim();if(!text)return
+  const task={id:'QT'+Date.now(),text,done:false,task_date:QT_DATE}
+  QT.push(task);inp.value='';renderQT()
+  try{await db.from('daily_tasks').insert(task)}catch(e){toast('Error: '+e.message)}
+}
+
+async function qtToggle(i){
+  QT[i].done=!QT[i].done;renderQT()
+  try{await db.from('daily_tasks').update({done:QT[i].done}).eq('id',QT[i].id)}catch(e){toast('Error: '+e.message)}
+}
+
+async function qtDel(i){
+  const id=QT[i].id;QT.splice(i,1);renderQT()
+  try{await db.from('daily_tasks').delete().eq('id',id)}catch(e){toast('Error: '+e.message)}
+}
+
+async function qtClearDone(){
+  const ids=QT.filter(t=>t.done).map(t=>t.id);QT=QT.filter(t=>!t.done);renderQT()
+  try{await Promise.all(ids.map(id=>db.from('daily_tasks').delete().eq('id',id)))}catch(e){toast('Error: '+e.message)}
+}
+
 async function loadProjects(){
   try{
     const{data,error}=await db.from('projects').select('*').order('created_at',{ascending:false})
     if(error)throw error
     P=(data||[]).map(toLocal)
-    renderOverview();updateCount()
+    renderOverview();updateCount();loadQT()
     const hash=location.hash.slice(1)
     if(hash){const f=P.find(p=>p.id===hash);if(f)openProject(hash)}
   }catch(e){toast('Error loading: '+e.message)}
@@ -479,7 +561,7 @@ function nav(page){
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'))
   document.getElementById('page-'+page).classList.add('active')
   document.querySelector(`[onclick="nav('${page}')"]`)?.classList.add('active')
-  if(page==='overview')renderOverview()
+  if(page==='overview'){renderOverview();renderQT()}
   if(page==='completed')renderCompleted()
   updateCount()
 }
