@@ -533,7 +533,11 @@ async function qtDel(i){
   try{await db.from('daily_tasks').delete().eq('id',id)}catch(e){toast('Error: '+e.message)}
 }
 
-function scheduleAll(){
+async function scheduleAll(){
+  const btn=document.querySelector('[onclick="scheduleAll()"]')
+  const orig=btn?.innerHTML
+  if(btn){btn.disabled=true;btn.innerHTML='⏳ Loading…'}
+
   const lines=[]
 
   // Daily tasks
@@ -544,17 +548,33 @@ function scheduleAll(){
     lines.push(`Today's tasks${totalMins?' (~'+fmtMins(totalMins)+')':''}: ${taskList}`)
   }
 
-  // Active + blocked projects
+  // Active + blocked projects — fetch pending tasks fresh to get deadlines
   const active=P.filter(p=>p.status==='IN PROGRESS'||p.status==='BLOCKED')
+  const tasksByProject={}
+  try{
+    if(active.length){
+      const{data}=await db.from('tasks').select('project_id,text,due_date,duration_mins').in('project_id',active.map(p=>p.id)).eq('done',false).order('sort_order')
+      ;(data||[]).forEach(t=>{if(!tasksByProject[t.project_id])tasksByProject[t.project_id]=[];tasksByProject[t.project_id].push(t)})
+    }
+  }catch(e){/* proceed without task detail */}
+
   active.forEach(p=>{
     const days=p.end?Math.ceil((new Date(p.end+'T12:00:00')-TODAY)/86400000):null
-    const dl=days!==null?(days<0?' — OVERDUE':days<=7?` — due in ${days}d`:''):''
-    const sched=p.sessionsScheduled>0?` (${p.sessionsScheduled} session${p.sessionsScheduled!==1?'s':''} already booked)`:''
+    const dl=days!==null?(days<0?' — project OVERDUE':days<=7?` — project due in ${days}d`:''):''
+    const sched=p.sessionsScheduled>0?` (${p.sessionsScheduled} session${p.sessionsScheduled!==1?'s':''} booked)`:''
     lines.push(`${p.id} — ${p.name} [${p.priority} priority${dl}]${sched}`)
+    const ptasks=tasksByProject[p.id]||[]
+    ptasks.forEach(t=>{
+      const parts=[]
+      if(t.duration_mins)parts.push(t.duration_mins+'m')
+      if(t.due_date){const td=Math.ceil((new Date(t.due_date+'T12:00:00')-TODAY)/86400000);parts.push(td<0?'OVERDUE':td===0?'due today':td===1?'due tomorrow':`due ${t.due_date}`)}
+      lines.push(`  • ${t.text}${parts.length?' ('+parts.join(', ')+')':''}`)
+    })
   })
 
+  if(btn){btn.disabled=false;btn.innerHTML=orig}
   if(!lines.length){toast('Nothing to schedule');return}
-  const msg=`Schedule my work into the calendar:\n${lines.join('\n')}`
+  const msg=`Schedule my work into the calendar — reschedule any existing bookings if a task deadline makes it necessary:\n${lines.join('\n')}`
   navigator.clipboard.writeText(msg).then(()=>toast('Copied — paste to Claude')).catch(()=>toast(msg))
 }
 
@@ -994,11 +1014,17 @@ function renderScheduledSessions(){
 function scheduleProject(){
   if(!CP)return
   const remaining=CP.tasks.filter(t=>!t.done)
-  const timedMins=remaining.filter(t=>t.durationMins).reduce((s,t)=>s+(t.durationMins||0),0)
-  const timedCount=remaining.filter(t=>t.durationMins).length
-  const timeHint=timedMins?` — ${timedCount} task${timedCount!==1?'s':''} remaining, ~${fmtMins(timedMins)} of work`
-    :remaining.length?` — ${remaining.length} task${remaining.length!==1?'s':''} remaining`:''
-  const msg=`Schedule next work session for ${CP.id} — ${CP.name}${timeHint}`
+  const days=CP.end?Math.ceil((new Date(CP.end+'T12:00:00')-TODAY)/86400000):null
+  const dl=days!==null?(days<0?' — project OVERDUE':days<=7?` — project due in ${days}d`:` — project due ${CP.end}`):''
+  const sched=CP.sessionsScheduled>0?` (${CP.sessionsScheduled} session${CP.sessionsScheduled!==1?'s':''} already booked)`:''
+  const lines=[`Schedule next work session for ${CP.id} — ${CP.name} [${CP.priority} priority${dl}]${sched}`]
+  remaining.forEach(t=>{
+    const parts=[]
+    if(t.durationMins)parts.push(t.durationMins+'m')
+    if(t.due){const td=Math.ceil((new Date(t.due+'T12:00:00')-TODAY)/86400000);parts.push(td<0?'OVERDUE':td===0?'due today':td===1?'due tomorrow':`due ${t.due}`)}
+    lines.push(`  • ${t.text}${parts.length?' ('+parts.join(', ')+')':''}`)
+  })
+  const msg=lines.join('\n')
   navigator.clipboard.writeText(msg).then(()=>toast('Copied — paste to Claude')).catch(()=>toast(msg))
 }
 
